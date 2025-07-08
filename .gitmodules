@@ -1,0 +1,3 @@
+[submodule "XTouch-py"]
+	path = XTouch-py
+	url = git@github.com:screaminglucy/XTouch-py.git
