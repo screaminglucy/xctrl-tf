@@ -7,6 +7,7 @@ from time import sleep
 import sys
 import mido
 import logging
+import math
 import time
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ global current_value_fader_zero
 current_value_fader_zero = 0
 
 def fader_value_to_db (value):
+    logger.info ("fader value = "+str(value))
     db = value - 24124
     db = db / 864
     return db

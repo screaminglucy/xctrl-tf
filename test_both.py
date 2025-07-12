@@ -2,10 +2,15 @@ import xctrl_tf.XTouch as XTouch
 import xctrl_tf.tf as tf
 import time
 
+t = tf.tf
 xtouch = XTouch.xtouch
 #set MIXER:Current/InCh/Fader/On [x] 0 [y]
 
 while (xtouch._active == False):
+    time.sleep(1)
+    print ("waiting...")
+
+while (t._active == False):
     time.sleep(1)
     print ("waiting...")
 
@@ -18,7 +23,22 @@ input("Press enter...")
 db = XTouch.fader_value_to_db(XTouch.current_value_fader_zero)
 print ('db '+str(db))
 cmd = 'set MIXER:Current/InCh/Fader/Level 0 0 '+tf.fader_db_to_value(db) 
-tf.send_command(cmd)
+t.send_command(cmd)
 xtouch.SendMeter(0,8)
 input("Press enter...")
+
+
+import keyboard
+print("Looping... Press 'q' to quit.")
+
+while not keyboard.is_pressed('q'):
+    # Your code to be executed repeatedly goes here
+    time.sleep(1)  # Add a small delay to prevent excessive CPU usage
+    db = XTouch.fader_value_to_db(XTouch.current_value_fader_zero)
+    print ('******************db '+str(db))
+    cmd = 'set MIXER:Current/InCh/Fader/Level 0 0 '+tf.fader_db_to_value(db) 
+    t.send_command(cmd)
+
 xtouch.running = False
+t.running = False
+
