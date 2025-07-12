@@ -18,13 +18,27 @@ global current_value_fader_zero
 current_value_fader_zero = 0
 
 def fader_value_to_db (value):
-    logger.info ("fader value = "+str(value))
-    db = value - 24124
-    db = db / 864
+    if (value == 0):
+        db = -120
+    else:
+        db = 20*math.log10(value / 24575) *3.5
+        if value > 24575:
+            db = (value - 24575) / 800
+    db = int (db)
+    logger.info ("todb: fader value = "+str(value)+ " db value = "+str(db))
     return db
-    #8191 = 10db
-    #4396 = 0db
-    #-8192 = -inf
+
+def fader_db_to_value (db):
+    value = math.pow(10,((db/3.5)/20))*24575
+    if (db > 0):
+        value = (db * 800)+24575
+    if (db < -100):
+        value = 0
+    if value < 0:
+        value = 0
+    value = int (value)
+    logger.info ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
+    return db
 
 class XTouch:
 
