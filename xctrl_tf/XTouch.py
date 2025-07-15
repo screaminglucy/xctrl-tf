@@ -532,8 +532,4 @@ def SetSliderValue (index,value):
 
 xtouch = XTouch('192.168.10.9')
 
-xtouch.setOnButtonChange(PrintButton)
-xtouch.GetButton('Flip').setOnChange(PrintFlip)
-xtouch.GetButton('Flip').setOnDown(FlipPress)
-xtouch.GetButton('Flip').setOnUp(FlipRelease)
-xtouch.setOnSliderChange(SetSliderValue)
+

@@ -15,6 +15,18 @@ while (t._active == False):
     time.sleep(1)
     print ("waiting...")
 
+def updateTFFader (index,value):
+    db = XTouch.fader_value_to_db(value)
+    cmd = 'set MIXER:Current/InCh/Fader/Level '+str(index)+' 0 '+tf.fader_db_to_value(db) 
+    t.send_command(cmd)
+
+
+xtouch.setOnButtonChange(XTouch.PrintButton)
+xtouch.GetButton('Flip').setOnChange(XTouch.PrintFlip)
+xtouch.GetButton('Flip').setOnDown(XTouch.FlipPress)
+xtouch.GetButton('Flip').setOnUp(XTouch.FlipRelease)
+xtouch.setOnSliderChange(updateTFFader)
+
 xtouch.SendSlider(0,8192)
 xtouch.SendScribble(0, "hi", "there", 6, False)
 
@@ -26,19 +38,12 @@ print ('db '+str(db))
 cmd = 'set MIXER:Current/InCh/Fader/Level 0 0 '+tf.fader_db_to_value(db) 
 t.send_command(cmd)
 xtouch.SendMeter(0,8)
-
-cmd = 'mtrstart MIXER:Current/InCh/PreHPF 100' #time interval
-t.send_command(cmd)
-cmd = 'mtrstart MIXER:Current/Mix/PreEQ 100' #time interval
-t.send_command(cmd)
-
-
 input("Press enter...")
 
 
 #keep alive "devstatus runmode"
 print("Looping... Press 'q' to quit.")
-
+'''
 while not keyboard.is_pressed('q'):
     # Your code to be executed repeatedly goes here
     time.sleep(0.01)  # Add a small delay to prevent excessive CPU usage
@@ -47,7 +52,7 @@ while not keyboard.is_pressed('q'):
     print ('******************db '+str(db))
     cmd = 'set MIXER:Current/InCh/Fader/Level 0 0 '+tf.fader_db_to_value(db) 
     t.send_command(cmd)
-
+'''
 xtouch.running = False
 t.running = False
 

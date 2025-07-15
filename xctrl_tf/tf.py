@@ -28,6 +28,7 @@ def get_ip():
   return local_ip
 
 def detect_yamaha (): 
+    #send udp broadcast to probe for mixer
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
@@ -58,7 +59,6 @@ def detect_yamaha ():
         logger.info("received message: %s" % data)
         data_list = list(data)
         logger.info (data_list)
-        #ip = str(data_list[8])+'.'+str(data_list[9])+'.'+str(data_list[10])+'.'+str(data_list[11])
         ip = addr[0]
         if ip!=get_ip():
             logger.info (ip)
@@ -84,6 +84,7 @@ class tf_rcp:
         _thread.start_new_thread(self.HandleMsg, ())
         self.running = True
         self.SendKeepAlive()
+        self.Metering()
         logger.info("Starting try to connect")
 
     def maintain_connection(self):
@@ -101,6 +102,7 @@ class tf_rcp:
                         self.sock = s
                         self._active = True
                         self.lastMsgTime = time.time()
+                        self.send_command('scpmode keepalive 10000')
                         return # Return the connected socket
                     else:
                         logger.info(f"Connection failed (Error: {errno.errorcode[result]}). Retrying...")
@@ -118,20 +120,37 @@ class tf_rcp:
         if self.running:
             if self._active:
                 self.send_command("devstatus runmode")
-            threading.Timer(3, self.SendKeepAlive).start()
+            threading.Timer(1, self.SendKeepAlive).start()
             if self.lastMsgTime is not None:
                 if (time.time() - self.lastMsgTime) > timeout:
                     logger.info(f"Dropped connection from {self.host}")
                     self._active = False
 
+    def Metering(self):
+        if self.running:
+            if self._active:
+                cmd = 'mtrstart MIXER:Current/InCh/PreHPF 100' #time interval
+                self.send_command(cmd)
+                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 100' #time interval
+                self.send_command(cmd)
+            threading.Timer(5, self.Metering).start()
+
     def HandleMsg (self):
         # receive a message 
         while self.running:
+            buffer = b""
             if self._active:
                 data = self.sock.recv(1500)
                 if data:
-                    logger.info(f"Received: {data.decode()}")
                     self.lastMsgTime = time.time()
+                    buffer += data
+                    if b"\n" in buffer:
+                        index_of_char = buffer.find(b"\n")
+                        if index_of_char != -1:
+                            message = buffer[:index_of_char]
+                            logger.info(f"Received: {message.decode()}")
+                        #end of message received
+                        buffer = buffer[index_of_char:]
 
     def send_command (self,command):
         logger.info ("Sending command: " + command)
