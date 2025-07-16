@@ -40,6 +40,15 @@ def fader_db_to_value (db):
     logger.info ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
     return db
 
+def db_to_meter_value(db):
+    if (db >= -1):
+        return 8
+    if (db < -50):
+        return 0
+    dbabs = abs(db)
+    value = int(8 - (dbabs/6.5))
+    return value
+
 class XTouch:
 
     def __init__(self, ip):
@@ -127,7 +136,10 @@ class XTouch:
 
     def SendMeter(self, index, level):
         self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, index + level, 0xF7]))
-
+  
+    def SetMeterLevel(self, channel, level):
+        self.channels[channel].SetMeterLevel(level)
+    
     def SendKeepAlive(self):
         if self.running:
             self.sendRawMsg([0xF0, 0x00, 0x00, 0x66, 0x14, 0x00, 0xF7])
@@ -293,7 +305,7 @@ class XTouch:
             self.SendMeter()
 
         def SendMeter(self):
-            self.xtouch.SendMeter(self.index * 2, self.meterLevel)
+            self.xtouch.SendMeter(self.index * 16, self.meterLevel)
 
     class Buttons:
         _buttonList = [

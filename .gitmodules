@@ -1,6 +1,3 @@
-[submodule "XTouch-py"]
-	path = XTouch
-	url = git@github.com:screaminglucy/XTouch-py.git
 [submodule "yamaha-rcp-docs"]
 	path = yamaha-rcp-docs
 	url = git@github.com:BrenekH/yamaha-rcp-docs.git

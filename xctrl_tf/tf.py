@@ -4,6 +4,7 @@ import time
 import logging
 import threading
 import _thread
+from tfmeter import meter_dict
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -75,6 +76,8 @@ class tf_rcp:
         self.host = ip
         self._active = False
         self.lastMsgTime = None
+        self.onMixMeterRcv = None
+        self.onChMeterRcv = None
         self.connect()
 
     def connect(self):
@@ -133,7 +136,13 @@ class tf_rcp:
                 self.send_command(cmd)
                 cmd = 'mtrstart MIXER:Current/Mix/PreEQ 100' #time interval
                 self.send_command(cmd)
-            threading.Timer(5, self.Metering).start()
+            threading.Timer(10, self.Metering).start()
+    
+    def setOnChMeterRcv(self, callback):
+        self.onChMeterRcv = callback
+
+    def setOnMixMeterRcv(self, callback):
+        self.onMixMeterRcv = callback
 
     def HandleMsg (self):
         # receive a message 
@@ -148,7 +157,17 @@ class tf_rcp:
                         index_of_char = buffer.find(b"\n")
                         if index_of_char != -1:
                             message = buffer[:index_of_char]
-                            logger.info(f"Received: {message.decode()}")
+                            messageString = message.decode('utf-8')
+                            if messageString.startswith('NOTIFY mtr MIXER:Current/Mix'):
+                                if self.onMixMeterRcv:
+                                    values = messageString.split(' ')[4:]
+                                    self.onMixMeterRcv([meter_dict[int(numeric_string, 16)] for numeric_string in values]) 
+                            elif messageString.startswith('NOTIFY mtr MIXER:Current/InCh'):
+                                if self.onChMeterRcv:
+                                    values = messageString.split(' ')[4:]
+                                    self.onChMeterRcv([meter_dict[int(numeric_string, 16)] for numeric_string in values]) 
+                            else:
+                                logger.info(f"Received: {message.decode()}")
                         #end of message received
                         buffer = buffer[index_of_char:]
 

@@ -1,7 +1,8 @@
 import xctrl_tf.XTouch as XTouch
-import xctrl_tf.tf as tf
+import keyboard
 import time
-xtouch = XTouch.xtouch
+xtouch_ip = '192.168.10.9'
+xtouch = XTouch.XTouch(xtouch_ip)
 #set MIXER:Current/InCh/Fader/On [x] 0 [y]
 
 while (xtouch._active == False):
@@ -10,14 +11,27 @@ while (xtouch._active == False):
 
 xtouch.SendSlider(0,8192)
 xtouch.SendScribble(0, "hi", "there", 6, False)
-
+xtouch.SendScribble(1, "hi", "there2", 5, False)
 
 
 input("Press enter...")
-db = XTouch.fader_value_to_db(XTouch.current_value_fader_zero)
-print ('db '+str(db))
-cmd = 'set MIXER:Current/InCh/Fader/Level 0 0 '+tf.fader_db_to_value(db) 
+
 #tf.send_command(cmd)
-xtouch.SendMeter(0,8)
-input("Press enter...")
+while not keyboard.is_pressed('q'):
+    xtouch.SetMeterLevel(0,8)
+    time.sleep(2)
+    xtouch.SetMeterLevel(1,7)
+    time.sleep(2)
+    xtouch.SetMeterLevel(2,6)
+    time.sleep(2)
+    xtouch.SetMeterLevel(3,5)
+    time.sleep(2)
+    xtouch.SetMeterLevel(4,4)
+    time.sleep(2)
+    xtouch.SetMeterLevel(5,3)
+    time.sleep(2)
+    xtouch.SetMeterLevel(6,2)
+    time.sleep(2)
+    xtouch.SetMeterLevel(7,1)
+    time.sleep(2)
 xtouch.running = False
