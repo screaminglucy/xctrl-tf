@@ -530,6 +530,5 @@ def SetSliderValue (index,value):
     global current_value_fader_zero
     current_value_fader_zero = value
 
-xtouch = XTouch('192.168.10.9')
 
 

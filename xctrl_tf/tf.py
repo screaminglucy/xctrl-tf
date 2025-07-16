@@ -155,8 +155,7 @@ class tf_rcp:
     def send_command (self,command):
         logger.info ("Sending command: " + command)
         command += '\n'
-        
         # send command
         self.sock.sendall(command.encode())
 
-tf = tf_rcp()
+
