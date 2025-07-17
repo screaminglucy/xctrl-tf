@@ -26,14 +26,14 @@ def mixMeterRcv (values):
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
     button.SetLED(button.pressed)
-    if button.name == 'BankRight':
+    if button.name == 'BankRight' and button.pressed:
         x2tf.fader_offset += 8
-    if button.name == 'BankLeft':
+    if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
-    if button.name == 'ChannelRight':
+    if button.name == 'ChannelRight' and button.pressed:
         x2tf.fader_offset += 1
-    if button.name == 'ChannelLeft':
+    if button.name == 'ChannelLeft' and button.pressed:
         if x2tf.fader_offset >= 1:
             x2tf.fader_offset -= 1
 
@@ -43,7 +43,7 @@ class xctrltf:
         self.t = tf.tf_rcp()
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.wait_for_connect()
-        self.xtouch.setOnButtonChange(XTouch.PrintButton)
+        self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.GetButton('Flip').setOnChange(XTouch.PrintFlip)
         self.xtouch.GetButton('Flip').setOnDown(XTouch.FlipPress)
         self.xtouch.GetButton('Flip').setOnUp(XTouch.FlipRelease)
