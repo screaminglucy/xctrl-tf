@@ -9,9 +9,10 @@ import mido
 import logging
 import math
 import time
+import queue
 
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.INFO)
 
 timeout = 60
 global current_value_fader_zero
@@ -41,18 +42,33 @@ def fader_db_to_value (db):
     return db
 
 def db_to_meter_value(db):
-    if (db >= -1):
+    #fudged for now
+    db = db + 16
+    if (db < 0):
+        db = db * 3
+    if (db >= -10):
         return 8
-    if (db < -50):
-        return 0
-    dbabs = abs(db)
-    value = int(8 - (dbabs/6.5))
-    return value
+    if (db > -15 and db < -10):
+        return 7
+    if (db > -20 and db <= -18):
+        return 6
+    if (db > -15 and db <= -18):
+        return 5
+    if (db > -25 and db <= -15):
+        return 4
+    if (db > -35 and db <= -25):
+        return 3
+    if (db > -40 and db <= -35):
+        return 2
+    if (db > -55 and db <= -40):
+        return 1
+    return 0
 
 class XTouch:
 
     def __init__(self, ip):
         self.ip = None
+        self.outbound_q = queue.Queue()
         self.channels = []
         for i in range(9):
             self.channels.append(self.Channel(self, i))
@@ -87,8 +103,9 @@ class XTouch:
         host = ''
         port = 10111
         self.sock.bind((host, port))
-        _thread.start_new_thread(self.getMsg, ())
         self.running = True
+        _thread.start_new_thread(self.getMsg, ())
+        _thread.start_new_thread(self.processOutgoingPackets, ())
         logger.info("Connection opened")
         self.SendKeepAlive()
 
@@ -100,12 +117,20 @@ class XTouch:
                 logger.info(f"Accepted connection from {addr}")
                 self._active = True
             self.HandleMsg(data)
-            self.lastMsgTime = time.time()
-            
-    def sendRawMsg(self, list):
-        if self._active:
-            self.sock.sendto(bytearray(list), (self.ip, 10111))
-            #sleep(0.002)
+            self.lastMsgTime = time.time() 
+    
+    def processOutgoingPackets (self):
+        logger.info ("xtouch processOutgoingPackets() thread started")
+        while self.running:
+            try :
+                msg = self.outbound_q.get(block=False)
+                logger.debug ("sending "+str(msg))
+                self.sock.sendto(bytearray(msg), (self.ip, 10111))
+            except :
+                pass
+
+    def sendRawMsg(self, msg):
+        self.outbound_q.put(msg)
 
     def sendMidiControl(self, index, value):
         self.sendRawMsg(bytearray([0xF0, 0xD0, index, value, 0xF7]))
@@ -131,14 +156,25 @@ class XTouch:
         self.sendRawMsg(bytearray([0xF0, 0xB0, 56 + index, int(right, 2), 0xF7]))
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
+        logger.info ("send scribble " +topText + bottomText)
         self.sendRawMsg(bytearray([0xF0, 0x00, 0x00, 0x66, 0x58, 0x20 + index, (0x00 if not bottomInverted else 0x40) + color]
             + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) + [0xF7]))
 
     def SendMeter(self, index, level):
-        self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, index + level, 0xF7]))
+        self.meter_levels[index] = level
+        print (self.meter_levels)
+        self.SendMeters()
+        #self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, index + level, 0xF7]))
+
+    def SendMeters(self):
+        self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, 0 + self.channels[0].GetMeterLevel(), 16 + self.channels[1].GetMeterLevel(), 32 + self.channels[2].GetMeterLevel() , 48 + self.channels[3].GetMeterLevel(), 64 + self.channels[4].GetMeterLevel(), \
+        80 + self.channels[5].GetMeterLevel(), 96 + self.channels[6].GetMeterLevel(), 112 + self.channels[7].GetMeterLevel(),0xF7]))
   
     def SetMeterLevel(self, channel, level):
         self.channels[channel].SetMeterLevel(level)
+
+    def SetMeterLevelPeak(self, channel, level):
+        self.channels[channel].SetMeterLevelPeak(level)
     
     def SendKeepAlive(self):
         if self.running:
@@ -173,7 +209,7 @@ class XTouch:
                 self.onEncoderChange(int(data[1] - 0x10), int(0x40 - data[2]) if data[2] > 0x40 else data[2])
             logger.info('Encoder: (' + str(int(data[1] - 0x10)) + ', ' + str(int(-(data[2] - 0x40) if data[2] > 0x40 else data[2])) + ')')
         elif data[0] == 0xF0:
-            logger.info('System: ' + str( [hex(d) for d in data]))
+            logger.debug('System: ' + str( [hex(d) for d in data]))
         else:
             logger.info('Unknown: ' + str( [hex(d) for d in data]))
 
@@ -213,6 +249,7 @@ class XTouch:
             # Meter values
             self.meterDecay = True
             self.meterLevel = 0
+            self.meter_history = [0]
 
         def SetAll(self):
             self.SendSlider()
@@ -298,14 +335,21 @@ class XTouch:
             if level > 8:
                 level = 8
             self.meterLevel = level
-            self.SendMeter()
+            self.xtouch.SendMeters()
+
+        def SetMeterLevelPeak(self, level: int):
+            self.meter_history.append(level)
+            self.SetMeterLevel(max(self.meter_history))
+            self.meterLevel = max(self.meter_history)
+            if len (self.meter_history) > 2:
+                self.meter_history = self.meter_history[1:]
+            self.xtouch.SendMeters()
 
         def SetMeterDecay(self, decay: bool):
             self.meterDecay = decay
-            self.SendMeter()
 
-        def SendMeter(self):
-            self.xtouch.SendMeter(self.index * 16, self.meterLevel)
+        def GetMeterLevel(self):
+            return self.meterLevel
 
     class Buttons:
         _buttonList = [

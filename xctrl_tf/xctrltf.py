@@ -5,7 +5,10 @@ import keyboard
 import logging
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 global x2tf
+METER_HISTORY_LENGTH = 10
+
 
 #callbacks
 def updateTFFader (index,value):
@@ -20,6 +23,19 @@ def chMeterRcv (values):
 def mixMeterRcv (values):
     x2tf.update_main_meter(values)
 
+def buttonPress (button):
+    logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
+    button.SetLED(button.pressed)
+    if button.name == 'BankRight':
+        x2tf.fader_offset += 8
+    if button.name == 'BankLeft':
+        if x2tf.fader_offset >= 8:
+            x2tf.fader_offset -= 8
+    if button.name == 'ChannelRight':
+        x2tf.fader_offset += 1
+    if button.name == 'ChannelLeft':
+        if x2tf.fader_offset >= 1:
+            x2tf.fader_offset -= 1
 
 class xctrltf:
 
@@ -45,15 +61,15 @@ class xctrltf:
             print ("waiting to connect...")
 
     def update_meter (self, location, value):
-        logger.info ("meter loc = "+str(location)+" value = "+str(value))
-        self.xtouch.SetMeterLevel(location, value)
+        logger.debug ("meter loc = "+str(location)+" value = "+str(value))
+        self.xtouch.SetMeterLevelPeak(location, value)
 
     def update_ch_meters (self, values):
         meter_values = [XTouch.db_to_meter_value(num) for num in values]
-        for i in range(8):
-            self.update_meter (i,meter_values[self.fader_offset + i])
-
-        time.sleep(2)
+        if self.fader_offset < 24: 
+            display_meters = meter_values[self.fader_offset : self.fader_offset  + 8]
+            for i in range(8):
+                self.update_meter (i,display_meters[i])
 
     def update_main_meter(self, values):
         self.update_meter (9,values[9]) #aux9

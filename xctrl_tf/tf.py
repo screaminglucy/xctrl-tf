@@ -5,6 +5,7 @@ import logging
 import threading
 import _thread
 from tfmeter import meter_dict
+import queue
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -74,6 +75,7 @@ class tf_rcp:
         if ip is None:
             ip = detect_yamaha()
         self.host = ip
+        self.outbound_q = queue.Queue()
         self._active = False
         self.lastMsgTime = None
         self.onMixMeterRcv = None
@@ -83,9 +85,10 @@ class tf_rcp:
     def connect(self):
         self.sock = None
         self.port = 49280
+        self.running = True
+        _thread.start_new_thread(self.processOutgoingPackets, ())
         _thread.start_new_thread(self.maintain_connection, ())
         _thread.start_new_thread(self.HandleMsg, ())
-        self.running = True
         self.SendKeepAlive()
         self.Metering()
         logger.info("Starting try to connect")
@@ -132,9 +135,9 @@ class tf_rcp:
     def Metering(self):
         if self.running:
             if self._active:
-                cmd = 'mtrstart MIXER:Current/InCh/PreHPF 100' #time interval
+                cmd = 'mtrstart MIXER:Current/InCh/PreHPF 200' #time interval
                 self.send_command(cmd)
-                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 100' #time interval
+                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 200' #time interval
                 self.send_command(cmd)
             threading.Timer(10, self.Metering).start()
     
@@ -167,14 +170,28 @@ class tf_rcp:
                                     values = messageString.split(' ')[4:]
                                     self.onChMeterRcv([meter_dict[int(numeric_string, 16)] for numeric_string in values]) 
                             else:
-                                logger.info(f"Received: {message.decode()}")
+                                logger.debug(f"Received: {message.decode()}")
                         #end of message received
                         buffer = buffer[index_of_char:]
 
+    def processOutgoingPackets (self):
+        logger.info ("tf processOutgoingPackets() thread started")
+        while self.running:
+            try :
+                msg = self.outbound_q.get(block=False)
+                logger.debug ("sending "+str(msg))
+                self.sock.sendall(msg)
+            except :
+                pass
+
+    def putInOutBoundQueue(self, command):
+        self.outbound_q.put(command)    
+
     def send_command (self,command):
-        logger.info ("Sending command: " + command)
+        logger.debug ("Sending command: " + command)
         command += '\n'
         # send command
-        self.sock.sendall(command.encode())
+        self.putInOutBoundQueue(command.encode())
+        #self.sock.sendall(command.encode())
 
 
