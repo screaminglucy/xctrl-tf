@@ -106,6 +106,10 @@ class xctrltf:
             time.sleep(0.01)
             self.t.getChannelOn(i)
             time.sleep(0.01)
+        self.createColorMap()
+
+    def createColorMap(self):
+        pass
 
     def xtouchChToTFCh (self, fader_index):
         if self.map_by_color == False:
@@ -208,6 +212,13 @@ class xctrltf:
 
 
 x2tf = xctrltf()
+time.sleep(5)
+x2tf.syncTF2XTouch()
+time.sleep(2)
+x2tf.syncTF2XTouch()
+time.sleep(2)
+x2tf.syncTF2XTouch()
 input("Press enter to quit...")
+x2tf.stop_running()
 
 
