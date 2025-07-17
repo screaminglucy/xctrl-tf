@@ -13,9 +13,10 @@ METER_HISTORY_LENGTH = 10
 
 #callbacks
 def updateTFFader (index,value):
-    chan = index
     db = XTouch.fader_value_to_db(value)
-    x2tf.t.sendFaderValue(chan,db)
+    if index <= 7:
+        chan = index + x2tf.fader_offset
+        x2tf.t.sendFaderValue(chan,db)
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
