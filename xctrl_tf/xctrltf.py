@@ -12,10 +12,12 @@ METER_HISTORY_LENGTH = 10
 
 #callbacks
 def updateTFFader (index,value):
+    chan = index
     db = XTouch.fader_value_to_db(value)
-    cmd = 'set MIXER:Current/InCh/Fader/Level '+str(index)+' 0 '+tf.fader_db_to_value(db) 
-    x2tf.t.send_command(cmd)
-
+    cmd = 'set MIXER:Current/InCh/Fader/Level '+str(chan)+' 0 '+tf.fader_db_to_value(db) 
+    if (time.time() - x2tf.last_fader_updates[chan]) > 0.100:
+        x2tf.t.send_command(cmd)
+        x2tf.last_fader_updates[chan] = time.time() 
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
@@ -23,19 +25,47 @@ def chMeterRcv (values):
 def mixMeterRcv (values):
     x2tf.update_main_meter(values)
 
+def onFaderValueRcv (chan, value):
+    x2tf.updateFader(chan,value)
+
+def onFaderNameRcv (chan, name):
+    x2tf.updateFaderName(chan,name)
+
+def onFaderColorRcv (chan, color):
+    x2tf.updateFaderColor(chan,color)
+
+def onChannelMute(chan, value):
+    value =  not value
+    x2tf.updateChannelMute(chan,value)
+
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
-    button.SetLED(button.pressed)
+    if button.name != 'Ch1Mute':
+        button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
         x2tf.fader_offset += 8
+        x2tf.updateDisplay()
     if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
+            x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
-        x2tf.fader_offset += 1
+        if x2tf.fader_offset <= 31:
+            x2tf.fader_offset += 1
+            x2tf.updateDisplay()
     if button.name == 'ChannelLeft' and button.pressed:
         if x2tf.fader_offset >= 1:
             x2tf.fader_offset -= 1
+            x2tf.updateDisplay()
+    if button.name == 'Scrub' and button.pressed==False:
+        x2tf.syncTF2XTouch()
+        x2tf.updateDisplay()
+    if button.name == 'Ch1Mute' and button.pressed==False:
+        x2tf.ch_mutes[x2tf.fader_offset] = not x2tf.ch_mutes[x2tf.fader_offset]
+        x2tf.t.sendChannelMute(x2tf.fader_offset,x2tf.ch_mutes[x2tf.fader_offset])
+        x2tf.updateDisplay()
+
+    
 
 class xctrltf:
 
@@ -48,17 +78,65 @@ class xctrltf:
         self.xtouch.GetButton('Flip').setOnDown(XTouch.FlipPress)
         self.xtouch.GetButton('Flip').setOnUp(XTouch.FlipRelease)
         self.xtouch.setOnSliderChange(updateTFFader)
-        self.xtouch.SendSlider(0,8192)
-        self.xtouch.SendScribble(0, "hi", "there", 6, False)
         self.t.setOnChMeterRcv(chMeterRcv)
-        #self.t.setOnMixMeterRcv(mixMeterRcv)
+        self.t.onFaderValueRcv = onFaderValueRcv
+        self.t.onFaderColorRcv = onFaderColorRcv
+        self.t.onFaderNameRcv = onFaderNameRcv
+        self.t.onChannelMute = onChannelMute
         self.fader_offset = 0
-
+        self.fader_names = ['ch'] * 40
+        self.fader_colors = [7]*40
+        self.fader_values = [1000]*40
+        self.last_fader_updates = [time.time()]*40
+        self.ch_mutes = [False]*40
+    
+    def syncTF2XTouch (self):
+        for i in range(40):
+            self.t.getFaderValue(i)
+            self.t.getFaderName(i)
+            self.t.getFaderColor(i)
+            self.t.getChannelOn(i)
+    
+    def updateDisplay(self):
+        print (self.fader_names)
+        print (self.fader_offset)
+        for i in range(8):
+            chan = self.fader_offset + i
+            db = tf.fader_value_to_db(self.fader_values[chan])
+            v = XTouch.fader_db_to_value(db)
+            self.xtouch.SendSlider(i,v)
+            self.xtouch.SendScribble(i, self.fader_names[chan], str(chan+1), self.fader_colors[chan], False)
+        self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.fader_offset])
 
     def wait_for_connect (self):
-        while (self.xtouch._active == False) and (self.t._active == False):
+        while (self.xtouch._active == False) or (self.t._active == False):
             time.sleep(1)
             print ("waiting to connect...")
+
+    def updateChannelMute(self,chan, value):
+        self.ch_mutes[chan] = value
+
+    def updateFader (self, chan,value):
+        self.fader_values[chan] = value
+        index = chan - self.fader_offset
+        db = tf.fader_value_to_db(value)
+        v = XTouch.fader_db_to_value(db)
+        if index >= 0 and index < 8:
+            self.xtouch.SendSlider(index,v)
+
+    def updateFaderName(self,chan,value):
+        if value == "" or value is None:
+            value = str(chan)
+        self.fader_names[chan] = value
+    
+    def updateFaderColor(self,chan,value):
+        index = chan - self.fader_offset
+        try:
+            color = XTouch.XTouch.Channel.Color[value].value
+        except:
+            logger.error (value + " has no color match")
+            color = 7
+        self.fader_colors[chan] = color
 
     def update_meter (self, location, value):
         logger.debug ("meter loc = "+str(location)+" value = "+str(value))

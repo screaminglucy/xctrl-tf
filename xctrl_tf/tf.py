@@ -80,6 +80,10 @@ class tf_rcp:
         self.lastMsgTime = None
         self.onMixMeterRcv = None
         self.onChMeterRcv = None
+        self.onFaderNameRcv = None
+        self.onFaderColorRcv = None
+        self.onFaderValueRcv = None
+        self.onChannelMute = None
         self.connect()
 
     def connect(self):
@@ -135,9 +139,9 @@ class tf_rcp:
     def Metering(self):
         if self.running:
             if self._active:
-                cmd = 'mtrstart MIXER:Current/InCh/PreHPF 200' #time interval
+                cmd = 'mtrstart MIXER:Current/InCh/PreHPF 400' #time interval
                 self.send_command(cmd)
-                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 200' #time interval
+                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 400' #time interval
                 self.send_command(cmd)
             threading.Timer(10, self.Metering).start()
     
@@ -146,6 +150,34 @@ class tf_rcp:
 
     def setOnMixMeterRcv(self, callback):
         self.onMixMeterRcv = callback
+
+    def getFaderValue (self, channel):
+        cmd = 'get MIXER:Current/InCh/Fader/Level ' + str(channel)+' 0' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def getFaderName (self, channel):
+        cmd = 'get MIXER:Current/InCh/Label/Name ' + str(channel)+' 0' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def getFaderColor(self,channel):
+        cmd = 'get MIXER:Current/InCh/Label/Color ' + str(channel)+' 0' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def getChannelOn(self,channel):
+        cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def sendChannelMute(self,channel,value):
+        cmd = 'set MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 '
+        if value == True:
+            cmd += '0'
+        else:
+            cmd += '1'
+        self.send_command(cmd)
 
     def HandleMsg (self):
         # receive a message 
@@ -169,8 +201,36 @@ class tf_rcp:
                                 if self.onChMeterRcv:
                                     values = messageString.split(' ')[4:]
                                     self.onChMeterRcv([meter_dict[int(numeric_string, 16)] for numeric_string in values]) 
+                            elif messageString.startswith('OK get MIXER:Current/InCh/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/Level') :
+                                chan = int(messageString.split(' ')[3])
+                                level = int(messageString.split(' ')[5])
+                                if self.onFaderValueRcv:
+                                    self.onFaderValueRcv(chan,level)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/Label/Name') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Label/Name'):
+                                chan = int(messageString.split(' ')[3])
+                                name = messageString.split('"')[1]
+                                if self.onFaderNameRcv:
+                                    self.onFaderNameRcv(chan,name)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/Label/Color') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Label/Color'):
+                                logger.debug(messageString)
+                                chan = int(messageString.split(' ')[3])
+                                name = messageString.split('"')[1]
+                                if self.onFaderColorRcv:
+                                    self.onFaderColorRcv(chan,name)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On'):
+                                logger.info(messageString)
+                                chan = int(messageString.split(' ')[3])
+                                value = int(messageString.split(' ')[5])
+                                if value == 0:
+                                    value = False
+                                else:
+                                    value = True
+                                if self.onChannelMute:
+                                    self.onChannelMute(chan,value)
+                            elif messageString.startswith("ERROR"):
+                                logger.error(f"Received: {message.decode()}")
                             else:
-                                logger.debug(f"Received: {message.decode()}")
+                                pass
                         #end of message received
                         buffer = buffer[index_of_char:]
 
@@ -181,6 +241,7 @@ class tf_rcp:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.sock.sendall(msg)
+                time.sleep(0.001)
             except :
                 pass
 

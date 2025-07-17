@@ -39,7 +39,7 @@ def fader_db_to_value (db):
         value = 0
     value = int (value)
     logger.info ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
-    return db
+    return value
 
 def db_to_meter_value(db):
     #fudged for now
@@ -126,6 +126,7 @@ class XTouch:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.sock.sendto(bytearray(msg), (self.ip, 10111))
+                time.sleep(0.001)
             except :
                 pass
 
@@ -156,7 +157,7 @@ class XTouch:
         self.sendRawMsg(bytearray([0xF0, 0xB0, 56 + index, int(right, 2), 0xF7]))
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
-        logger.info ("send scribble " +topText + bottomText)
+        logger.info ("send scribble " +topText +" " + bottomText)
         self.sendRawMsg(bytearray([0xF0, 0x00, 0x00, 0x66, 0x58, 0x20 + index, (0x00 if not bottomInverted else 0x40) + color]
             + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) + [0xF7]))
 
@@ -222,7 +223,7 @@ class XTouch:
             Off = 0
             Red = 1
             Green = 2
-            Yellow = 2
+            Yellow = 3
             Blue = 4
             Pink = 5
             Cyan = 6
