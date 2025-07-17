@@ -60,7 +60,7 @@ def detect_yamaha ():
         data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
         logger.info("received message: %s" % data)
         data_list = list(data)
-        logger.info (data_list)
+        logger.debug (data_list)
         ip = addr[0]
         if ip!=get_ip():
             logger.info (ip)
@@ -72,11 +72,13 @@ def detect_yamaha ():
 class tf_rcp:
 
     def __init__(self, ip=None):
+        self.mix = 9 #aux9
         if ip is None:
             ip = detect_yamaha()
         self.host = ip
         self.outbound_q = queue.Queue()
         self._active = False
+        self.last_fader_updates = [time.time()]*40
         self.lastMsgTime = None
         self.onMixMeterRcv = None
         self.onChMeterRcv = None
@@ -152,7 +154,10 @@ class tf_rcp:
         self.onMixMeterRcv = callback
 
     def getFaderValue (self, channel):
-        cmd = 'get MIXER:Current/InCh/Fader/Level ' + str(channel)+' 0' 
+        if self.mix == 0:
+            cmd = 'get MIXER:Current/InCh/Fader/Level ' + str(channel)+' 0' 
+        else:
+            cmd = 'get MIXER:Current/InCh/ToMix/Level ' + str(channel)+' '+str(self.mix)+' '
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
 
@@ -167,17 +172,32 @@ class tf_rcp:
         logger.debug ('sent '+cmd)
 
     def getChannelOn(self,channel):
-        cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
+        if self.mix == 0:
+            cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
+        else:
+            cmd = 'get MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.mix)+' 1'
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
 
     def sendChannelMute(self,channel,value):
-        cmd = 'set MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 '
+        if self.mix == 0:
+            cmd = 'set MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 '
+        else:
+            cmd = 'set MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.mix)+' '
         if value == True:
             cmd += '0'
         else:
             cmd += '1'
         self.send_command(cmd)
+
+    def sendFaderValue(self,chan, db):
+        if self.mix == 0:
+            cmd = 'set MIXER:Current/InCh/Fader/Level '+str(chan)+' 0 '+fader_db_to_value(db) 
+        else: 
+            cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(chan)+' '+str(self.mix)+' '+fader_db_to_value(db)
+        if (time.time() - self.last_fader_updates[chan]) > 0.100:
+            self.send_command(cmd)
+            self.last_fader_updates[chan] = time.time() 
 
     def HandleMsg (self):
         # receive a message 
@@ -201,7 +221,8 @@ class tf_rcp:
                                 if self.onChMeterRcv:
                                     values = messageString.split(' ')[4:]
                                     self.onChMeterRcv([meter_dict[int(numeric_string, 16)] for numeric_string in values]) 
-                            elif messageString.startswith('OK get MIXER:Current/InCh/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/Level') :
+                            elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/Level')) and self.mix == 0) or \
+                                  ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/Level')) and self.mix != 0) :
                                 chan = int(messageString.split(' ')[3])
                                 level = int(messageString.split(' ')[5])
                                 if self.onFaderValueRcv:
@@ -217,7 +238,8 @@ class tf_rcp:
                                 name = messageString.split('"')[1]
                                 if self.onFaderColorRcv:
                                     self.onFaderColorRcv(chan,name)
-                            elif messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On'):
+                            elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix == 0) or \
+                                  ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On')) and self.mix != 0):
                                 logger.info(messageString)
                                 chan = int(messageString.split(' ')[3])
                                 value = int(messageString.split(' ')[5])
