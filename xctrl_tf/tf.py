@@ -115,11 +115,11 @@ class tf_rcp:
         logger.info("Starting try to connect")
 
     def maintain_connection(self):
-        start_time = time.time()
         retry_interval = 1
-        timeout = 6000
         while self.running:
-            while time.time() - start_time < timeout:
+            start_time = time.time()
+            logger.info ('maintain_connection: trying to connect')
+            while self._active == False:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     # Attempt to connect non-blocking
@@ -130,28 +130,31 @@ class tf_rcp:
                         self._active = True
                         self.lastMsgTime = time.time()
                         self.send_command('scpmode keepalive 10000')
-                        return # Return the connected socket
                     else:
                         logger.info(f"Connection failed (Error: {errno.errorcode[result]}). Retrying...")
                         s.close()  # Close the socket before retrying
                 except Exception as e:
                     logger.info(f"An error occurred: {e}. Retrying...")
                     s.close()
-                time.sleep(retry_interval)
-            logger.info(f"Timed out after {timeout} seconds. Could not connect to {self.host}:{self.port}")
+                if self._active == False:
+                    time.sleep(retry_interval)
+                    logger.info(f"Could not connect to {self.host}:{self.port}. Retry in 1 sec")          
             while self.running and self._active:
                 time.sleep(5)
-        self.sock.close()
+            self.sock.close()
 
-    def SendKeepAlive(self, timeout=30):
+    def SendKeepAlive(self, timeout=10):
         if self.running:
             if self._active:
                 self.send_command("devstatus runmode")
+            else:
+                logger.info(f"Dropped connection from {self.host}")
             threading.Timer(1, self.SendKeepAlive).start()
             if self.lastMsgTime is not None:
-                if (time.time() - self.lastMsgTime) > timeout:
+                if ((time.time() - self.lastMsgTime) > timeout) and self._active:
                     logger.info(f"Dropped connection from {self.host}")
                     self._active = False
+            
 
     def Metering(self):
         if self.running:
@@ -297,7 +300,10 @@ class tf_rcp:
         while self.running:
             buffer = b""
             if self._active:
-                data = self.sock.recv(1500)
+                try:
+                    data = self.sock.recv(1500)
+                except:
+                    data = None
                 if data:
                     self.lastMsgTime = time.time()
                     buffer += data
