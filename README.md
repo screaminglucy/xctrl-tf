@@ -2,6 +2,8 @@
 
 This is python code to control a Yamaha TF mixer with a Behringer XTouch control surface in XCtrl/MC mode
 
+Set the IP addresses correctly and run xctrltf.py
+
 ## Reference Material
 
 * [Python Script Template](https://usa.yamaha.com/files/download/other_assets/0/1266290/Python_Script_Template_V100.zip) - Simple Python scripts from Yamaha
