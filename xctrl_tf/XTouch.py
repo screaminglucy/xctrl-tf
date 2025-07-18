@@ -26,7 +26,7 @@ def fader_value_to_db (value):
         if value > 24575:
             db = (value - 24575) / 800
     db = int (db)
-    logger.info ("todb: fader value = "+str(value)+ " db value = "+str(db))
+    logger.debug ("todb: fader value = "+str(value)+ " db value = "+str(db))
     return db
 
 def fader_db_to_value (db):
@@ -38,7 +38,7 @@ def fader_db_to_value (db):
     if value < 0:
         value = 0
     value = int (value)
-    logger.info ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
+    logger.debug ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
     return value
 
 def db_to_meter_value(db):
@@ -149,21 +149,22 @@ class XTouch:
         self.sendRawMsg(bytearray([0xF0, 0xE0 + index] + list(value.to_bytes(2, sys.byteorder)) +  [0xF7]))
 
     def SendEncoder(self, index, values):
-        left[:] = ['1' if v else '0' for v in values][:7]
-        right[:] = ['1' if v else '0' for v in values][7:]
-        logger.info('left '+ str(left))
-        logger.info('right '+ str(right))
+        left = ''.join(['1' if v else '0' for v in values][:7])
+        right = ''.join(['1' if v else '0' for v in values][7:])
+        logger.debug('left '+ str(left))
+        logger.debug('right '+ str(right))
+        logger.debug ('values '+str(values))
         self.sendRawMsg(bytearray([0xF0, 0xB0, 48 + index, int(left, 2), 0xF7]))
         self.sendRawMsg(bytearray([0xF0, 0xB0, 56 + index, int(right, 2), 0xF7]))
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
-        logger.info ("send scribble " +topText +" " + bottomText)
+        logger.debug ("send scribble " +topText +" " + bottomText)
         self.sendRawMsg(bytearray([0xF0, 0x00, 0x00, 0x66, 0x58, 0x20 + index, (0x00 if not bottomInverted else 0x40) + color]
             + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) + [0xF7]))
 
     def SendMeter(self, index, level):
         self.meter_levels[index] = level
-        print (self.meter_levels)
+        logger.debug (self.meter_levels)
         self.SendMeters()
         #self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, index + level, 0xF7]))
 
@@ -202,7 +203,7 @@ class XTouch:
             if self.onButtonChange:
                 self.onButtonChange(self.buttons.buttons[int(data[1])])
         elif data[0] >= 0xE0 and data[0] <= 0xE8:
-            logger.info('Fader: (' + str(int(data[0] - 0xE0)) + ', ' + str(data[2] << 8 | data[1]) + ')')
+            logger.debug('Fader: (' + str(int(data[0] - 0xE0)) + ', ' + str(data[2] << 8 | data[1]) + ')')
             if self.onSliderChange:
                 self.onSliderChange(int(data[0] - 0xE0), int(data[2] << 8 | data[1]))
         elif data[0] == 0xB0:
@@ -285,13 +286,15 @@ class XTouch:
 
         def SendEncoder(self):
             enc = self.encoderValue
+            logger.debug (' encoderValue ' + str(self.encoderValue))
             if self.encoderFromCenter:
-                self.xtouch.SendEncoder(self.index, [enc <= -6, enc <= -5, enc <= -4, enc <= -3, enc <= -2, enc <= -1, True, enc >= 1, enc >= 2, enc >= 3, enc >= 4, enc >= 5, enc >= 6])
+                values = [enc>=0, enc >= -1, enc >= -2, enc >= -3, enc >= -4, enc >= -5, enc >= -6, enc >= 6, enc >= 5, enc >= 4, enc >= 3, enc >= 2, enc >= 1]
             elif self.encoderBetween:
-                self.xtouch.SendEncoder(self.index, [enc <= -5.25, enc >= -5.75 and enc <= -4.25, enc >= -4.75 and enc <= -3.25, enc >= -3.75 and enc <= -2.25, enc >= -2.75 and enc <= -1.25, enc >= -1.75 and enc <= -0.25, enc >= -0.75 and enc <= 0.75, enc >= 0.25 and enc <= 1.75, enc >= 1.25 and enc <= 2.75, enc >= 2.25 and enc <= 3.75, enc >= 3.25 and enc <= 4.75, enc >= 4.25 and enc <= 5.75, enc >= 5.25])
+                values = [enc <= -5.25, enc >= -5.75 and enc <= -4.25, enc >= -4.75 and enc <= -3.25, enc >= -3.75 and enc <= -2.25, enc >= -2.75 and enc <= -1.25, enc >= -1.75 and enc <= -0.25, enc >= -0.75 and enc <= 0.75, enc >= 0.25 and enc <= 1.75, enc >= 1.25 and enc <= 2.75, enc >= 2.25 and enc <= 3.75, enc >= 3.25 and enc <= 4.75, enc >= 4.25 and enc <= 5.75, enc >= 5.25]
             else:
-                self.xtouch.SendEncoder(self.index, [enc < -5.5, enc >= -5.5 and enc < -4.5, enc >= -4.5 and enc < -3.5, enc >= -3.5 and enc < -2.5, enc >= -2.5 and enc < -1.5, enc >= -1.5 and enc < -0.5, enc >= -0.5 and enc < 0.5, enc >= 0.5 and enc < 1.5, enc >= 1.5 and enc < 2.5, enc >= 2.5 and enc < 3.5, enc >= 3.5 and enc < 4.5, enc >= 4.5 and enc < 5.5, enc >= 5.5])
-
+                values =  [enc < -5.5, enc >= -5.5 and enc < -4.5, enc >= -4.5 and enc < -3.5, enc >= -3.5 and enc < -2.5, enc >= -2.5 and enc < -1.5, enc >= -1.5 and enc < -0.5, enc >= -0.5 and enc < 0.5, enc >= 0.5 and enc < 1.5, enc >= 1.5 and enc < 2.5, enc >= 2.5 and enc < 3.5, enc >= 3.5 and enc < 4.5, enc >= 4.5 and enc < 5.5, enc >= 5.5]
+            self.xtouch.SendEncoder(self.index, values)
+            logger.debug ('values = '+ str(values))
         #
         # Scribble Strip
         #

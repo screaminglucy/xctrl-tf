@@ -29,7 +29,7 @@ def get_ip():
   local_ip = socket.gethostbyname(hostname)
   return local_ip
 
-def detect_yamaha (): 
+def detect_yamaha (timeout=30): 
     #send udp broadcast to probe for mixer
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -56,7 +56,8 @@ def detect_yamaha ():
     sock.sendto(message, (b, 54330))
     sock.sendto(message5, (b, 54330))
     detect = False
-    while detect == False:
+    start = time.time()
+    while detect == False and (time.time()-start) < timeout:
         data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
         logger.info("received message: %s" % data)
         data_list = list(data)
@@ -66,6 +67,9 @@ def detect_yamaha ():
             logger.info (ip)
             logger.info ('detected yamaha')
             detect = True
+    if detect == False:
+        logger.warning ("no yamaha auto detected")
+        return None
     return ip
         
 
@@ -73,9 +77,13 @@ class tf_rcp:
 
     def __init__(self, ip=None):
         self.mix = 9 #aux9
-        if ip is None:
-            ip = detect_yamaha()
-        self.host = ip
+        ip_detected = detect_yamaha()
+        if ip_detected is None:
+            self.host = ip
+        else:
+            self.host = ip_detected
+        if self.host is None:
+            logger.error ("no IP found or specified for yamaha")
         self.outbound_q = queue.Queue()
         self._active = False
         self.last_fader_updates = [time.time()]*40
@@ -83,6 +91,7 @@ class tf_rcp:
         self.onMixMeterRcv = None
         self.onChMeterRcv = None
         self.onFaderNameRcv = None
+        self.onFXSendValueRcv = None
         self.onFaderColorRcv = None
         self.onFaderValueRcv = None
         self.onChannelMute = None
@@ -161,6 +170,16 @@ class tf_rcp:
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
 
+    def getFX1Send (self, channel):
+        cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def getFX2Send (self, channel):
+        cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
     def getFaderName (self, channel):
         cmd = 'get MIXER:Current/InCh/Label/Name ' + str(channel)+' 0' 
         self.send_command(cmd)
@@ -178,6 +197,15 @@ class tf_rcp:
             cmd = 'get MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.mix)+' 1'
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
+    
+    def sendFXSend(self,fx,channel,db):
+        value = fader_db_to_value(db)
+        if fx == 0:
+            cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0 ' + str(value) 
+        else:
+            cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1 ' + str(value) 
+        self.send_command(cmd)
+
 
     def sendChannelMute(self,channel,value):
         if self.mix == 0:
@@ -190,11 +218,14 @@ class tf_rcp:
             cmd += '1'
         self.send_command(cmd)
 
-    def sendFaderValue(self,chan, db):
+    def sendFaderValue(self,chan, db, noConvert=False):
+        v = fader_db_to_value(db) 
+        if noConvert:
+            v = str(db)
         if self.mix == 0:
-            cmd = 'set MIXER:Current/InCh/Fader/Level '+str(chan)+' 0 '+fader_db_to_value(db) 
+            cmd = 'set MIXER:Current/InCh/Fader/Level '+str(chan)+' 0 '+v
         else: 
-            cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(chan)+' '+str(self.mix)+' '+fader_db_to_value(db)
+            cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(chan)+' '+str(self.mix)+' '+v
         if (time.time() - self.last_fader_updates[chan]) > 0.100:
             self.send_command(cmd)
             self.last_fader_updates[chan] = time.time() 
@@ -227,6 +258,12 @@ class tf_rcp:
                                 level = int(messageString.split(' ')[5])
                                 if self.onFaderValueRcv:
                                     self.onFaderValueRcv(chan,level)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/ToFx/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToFx/Level')  :
+                                chan = int(messageString.split(' ')[3])
+                                fx_select = int(messageString.split(' ')[4])
+                                level = int(messageString.split(' ')[5])
+                                if self.onFXSendValueRcv:
+                                    self.onFXSendValueRcv(fx_select, chan,level)
                             elif messageString.startswith('OK get MIXER:Current/InCh/Label/Name') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Label/Name'):
                                 chan = int(messageString.split(' ')[3])
                                 name = messageString.split('"')[1]
@@ -240,7 +277,7 @@ class tf_rcp:
                                     self.onFaderColorRcv(chan,name)
                             elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix == 0) or \
                                   ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On')) and self.mix != 0):
-                                logger.info(messageString)
+                                logger.debug(messageString)
                                 chan = int(messageString.split(' ')[3])
                                 value = int(messageString.split(' ')[5])
                                 if value == 0:
