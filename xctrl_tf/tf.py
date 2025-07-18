@@ -278,7 +278,7 @@ class tf_rcp:
         if (time.time() - self.last_main_fader_update) > 0.100:
             self.send_command(cmd)
             self.last_main_fader_update = time.time() 
-
+    
     def sendFaderValue(self,chan, db, noConvert=False):
         v = fader_db_to_value(db) 
         if noConvert:
@@ -287,6 +287,7 @@ class tf_rcp:
             cmd = 'set MIXER:Current/InCh/Fader/Level '+str(chan)+' 0 '+v
         else: 
             cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(chan)+' '+str(self.mix)+' '+v
+        
         if (time.time() - self.last_fader_updates[chan]) > 0.100:
             self.send_command(cmd)
             self.last_fader_updates[chan] = time.time() 

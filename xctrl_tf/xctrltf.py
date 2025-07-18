@@ -84,6 +84,7 @@ def buttonPress (button):
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
         x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] 
         button.SetLED(x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)])
+        x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
     if button.name == 'Cancel' and button.pressed==False:
         x2tf.fader_select_en = [False] * 40
         x2tf.updateDisplay()
@@ -129,7 +130,10 @@ def onFXSendEnValueRcv (fx_select, chan, on):
     if fx_select == 1:
         x2tf.fx2_send_en[chan] = v
 
+last_encoder_time = time.time()
+
 def encoderChange(index, direction):
+    global last_encoder_time
     logger.info ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchChToTFCh(index)
@@ -154,11 +158,15 @@ def encoderChange(index, direction):
             if (x2tf.fader_values[ch] < (-50 * 100)) and direction < 0:
                 stop = True
         if stop == False:
-            for ch in chlist:
-                x2tf.fader_values[ch] = x2tf.fader_values[ch] + (100 * direction) #1db
-                x2tf.updateFader(ch,x2tf.fader_values[ch])
-                x2tf.t.sendFaderValue(ch,x2tf.fader_values[ch],noConvert=True)
-
+            x2tf.chan_encoder_group_adjustment = x2tf.chan_encoder_group_adjustment  + (300 * direction) #3db
+            if (time.time() - last_encoder_time) > 0.5:
+                for ch in chlist:
+                    x2tf.fader_values[ch] = x2tf.fader_values[ch] + x2tf.chan_encoder_group_adjustment
+                    x2tf.updateFader(ch,x2tf.fader_values[ch])
+                    x2tf.t.sendFaderValue(ch,x2tf.fader_values[ch],noConvert=True)
+                x2tf.chan_encoder_group_adjustment = 0
+                last_encoder_time = time.time()
+            
 
 
 class xctrltf:
@@ -189,6 +197,7 @@ class xctrltf:
         self.fx2_sends =  [-120] * 40
         self.fx1_send_en = [False] * 40
         self.fx2_send_en = [False] * 40
+        self.chan_encoder_group_adjustment = 0
         self.fader_offset = 0
         self.global_fx_on = True
         self.fader_names = ['ch'] * 40
