@@ -16,6 +16,8 @@ def updateTFFader (index,value):
     if index <= 7:
         chan = x2tf.xtouchChToTFCh(index)
         x2tf.t.sendFaderValue(chan,db)
+    if index == 8: #main fader
+        x2tf.t.sendMainFaderValue(db)
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
@@ -28,6 +30,9 @@ def onFaderValueRcv (chan, value):
 
 def onFaderNameRcv (chan, name):
     x2tf.updateFaderName(chan,name)
+
+def onMainFaderValueRcv(val):
+    x2tf.updateMainFader(val)
 
 def onFaderColorRcv (chan, color):
     x2tf.updateFaderColor(chan,color)
@@ -142,6 +147,7 @@ class xctrltf:
         self.xtouch.setOnSliderChange(updateTFFader)
         self.t.setOnChMeterRcv(chMeterRcv)
         self.t.onFaderValueRcv = onFaderValueRcv
+        self.t.onMainFaderValueRcv = onMainFaderValueRcv
         self.t.onFaderColorRcv = onFaderColorRcv
         self.t.onFaderNameRcv = onFaderNameRcv
         self.t.onFXSendValueRcv = onFXSendValueRcv
@@ -155,6 +161,7 @@ class xctrltf:
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
         self.fader_values = [1000]*40
+        self.main_fader_value = 0
         self.ch_mutes = [False]*40
         self.ch_map_by_color = list(range(40)) 
         self.color_order = [2,5,3,6,7,1,4,0]
@@ -174,6 +181,7 @@ class xctrltf:
             self.t.getFX1Send(i)
             time.sleep(0.01)
             self.t.getFX2Send(i)
+        self.t.getMainFaderValue()
 
     def getChSelected (self):
         true_indices = [i for i, val in enumerate(self.fader_select_en) if val]
@@ -220,6 +228,9 @@ class xctrltf:
         return v
 
     def updateDisplay(self):
+        maindb = tf.fader_value_to_db(self.main_fader_value)
+        mainv = XTouch.fader_db_to_value(maindb)
+        self.xtouch.SendSlider(8,mainv)
         for i in range(8):
             chan = self.xtouchChToTFCh(i)
             db = tf.fader_value_to_db(self.fader_values[chan])
@@ -268,6 +279,8 @@ class xctrltf:
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
+                    time.sleep(0.01)
+                    self.t.getMainFaderValue()
                     time.sleep(0.100)
                 self.updateDisplay()
                 time.sleep(1)
@@ -288,6 +301,13 @@ class xctrltf:
         v = XTouch.fader_db_to_value(db)
         if index >= 0 and index < 8:
             self.xtouch.SendSlider(index,v)
+
+    def updateMainFader (self, value):
+        self.main_fader_value = value
+        index = 8
+        db = tf.fader_value_to_db(value)
+        v = XTouch.fader_db_to_value(db)
+        self.xtouch.SendSlider(index,v)
 
     def updateFaderName(self,chan,value):
         if value == "" or value is None:

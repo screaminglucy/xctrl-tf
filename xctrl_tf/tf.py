@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 def fader_db_to_value (db):
     value = int(db * 100)
-    logger.info ("fader_db_to_value "+str(value))
+    logger.debug ("fader_db_to_value "+str(value))
     return str(value)
    # Max Fader Value: 1000
    #Min Fader Value: -13800
@@ -87,6 +87,7 @@ class tf_rcp:
         self.outbound_q = queue.Queue()
         self._active = False
         self.last_fader_updates = [time.time()]*40
+        self.last_main_fader_update =  time.time()
         self.lastMsgTime = None
         self.onMixMeterRcv = None
         self.onChMeterRcv = None
@@ -96,6 +97,7 @@ class tf_rcp:
         self.onFaderValueRcv = None
         self.onChannelMute = None
         self.onGlobalMuteRcv = None
+        self.onMainFaderValueRcv = None
         self.connect()
 
     def connect(self):
@@ -171,6 +173,13 @@ class tf_rcp:
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
 
+    def getMainFaderValue (self):
+        if self.mix != 0:
+            cmd = 'get MIXER:Current/Mix/Fader/Level '+ str(self.mix)+' 0' 
+        else:
+            cmd = 'get MIXER:Current/St/Fader/Level 0 0'
+        self.send_command(cmd)
+
     def getFX1Send (self, channel):
         cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0' 
         self.send_command(cmd)
@@ -230,6 +239,16 @@ class tf_rcp:
             cmd += '1'
         self.send_command(cmd)
 
+    def sendMainFaderValue (self, db):
+        v = fader_db_to_value(db) 
+        if self.mix != 0:
+            cmd = 'set MIXER:Current/Mix/Fader/Level '+ str(self.mix)+' 0 '+v 
+        else:
+            cmd = 'set MIXER:Current/St/Fader/Level 0 0 '+v
+        if (time.time() - self.last_main_fader_update) > 0.100:
+            self.send_command(cmd)
+            self.last_main_fader_update = time.time() 
+
     def sendFaderValue(self,chan, db, noConvert=False):
         v = fader_db_to_value(db) 
         if noConvert:
@@ -270,6 +289,11 @@ class tf_rcp:
                                 level = int(messageString.split(' ')[5])
                                 if self.onFaderValueRcv:
                                     self.onFaderValueRcv(chan,level)
+                            elif ((messageString.startswith('OK get MIXER:Current/Mix/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/Mix/Fader/Level')) and self.mix != 0) or \
+                                  ((messageString.startswith('OK get MIXER:Current/St/Fader/Level') or messageString.startswith('NOTIFY setMIXER:Current/St/Fader/Level')) and self.mix == 0) :
+                                level = int(messageString.split(' ')[5])
+                                if self.onMainFaderValueRcv:
+                                    self.onMainFaderValueRcv(level)
                             elif messageString.startswith('OK get MIXER:Current/InCh/ToFx/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToFx/Level')  :
                                 chan = int(messageString.split(' ')[3])
                                 fx_select = int(messageString.split(' ')[4])
