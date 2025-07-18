@@ -133,16 +133,7 @@ def encoderChange(index, direction):
     logger.info ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchChToTFCh(index)
-    if (x2tf.fx2_send_en[chan] and x2tf.fx1_send_en[chan]) or (not x2tf.fx2_send_en[chan] and not x2tf.fx1_send_en[chan]):
-        if x2tf.fx_select == 0:
-            fx = 0
-        else:
-            fx = 1
-    elif x2tf.fx2_send_en[chan]:
-        fx = 1
-    else:
-        fx = 0
-    if (index < 8):
+        fx = x2tf.chooseFX(chan)
         if fx == 0:
             x2tf.fx1_sends[chan] = x2tf.fx1_sends[chan] + (2.5 * direction)
             if x2tf.fx1_sends[chan] >= 0:
@@ -155,10 +146,18 @@ def encoderChange(index, direction):
             x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
     if index == 44: #big knob
         chlist=x2tf.getChSelected()
+        stop = False
         for ch in chlist:
-            x2tf.fader_values[ch] = x2tf.fader_values[ch] + (200 * direction) #2db
-            x2tf.updateFader(ch,x2tf.fader_values[ch])
-            x2tf.t.sendFaderValue(ch,x2tf.fader_values[ch],noConvert=True)
+            #implement limits 5db to -50db
+            if x2tf.fader_values[ch] >= (5 * 100):
+                stop = True
+            if x2tf.fader_values[ch] < (-50 * 100):
+                stop = True
+        if stop == False:
+            for ch in chlist:
+                x2tf.fader_values[ch] = x2tf.fader_values[ch] + (100 * direction) #1db
+                x2tf.updateFader(ch,x2tf.fader_values[ch])
+                x2tf.t.sendFaderValue(ch,x2tf.fader_values[ch],noConvert=True)
 
 
 
@@ -301,7 +300,7 @@ class xctrltf:
             if self.fader_names[chan][6:] != "":
                 channelno = (self.fader_names[chan][6:]+' '+str(chan+1))[0:6]
             color = self.fader_colors[chan]
-            logger.info ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
+            logger.debug ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
             self.xtouch.SendScribble(i, name, channelno, color, False)
             #choose fx index
             fx = self.chooseFX(chan)
