@@ -149,9 +149,9 @@ def encoderChange(index, direction):
         stop = False
         for ch in chlist:
             #implement limits 5db to -50db
-            if x2tf.fader_values[ch] >= (5 * 100):
+            if (x2tf.fader_values[ch] >= (5 * 100)) and direction > 0:
                 stop = True
-            if x2tf.fader_values[ch] < (-50 * 100):
+            if (x2tf.fader_values[ch] < (-50 * 100)) and direction < 0:
                 stop = True
         if stop == False:
             for ch in chlist:
