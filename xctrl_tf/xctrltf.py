@@ -38,7 +38,7 @@ def onChannelMute(chan, value):
 
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
-    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name:
+    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name:
         button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
         if x2tf.fader_offset <=31:
@@ -87,7 +87,15 @@ def buttonPress (button):
             x2tf.fx_select = 0
         button.SetLED(x2tf.fx_select == 1)
         x2tf.updateDisplay()
+    if button.name == 'Global' and button.pressed == True:
+       x2tf.global_fx_on = not x2tf.global_fx_on
+       x2tf.t.sendGlobalFxMute (not x2tf.global_fx_on)
+       x2tf.updateDisplay()
     
+
+def onGlobalMuteRcv (value):
+    x2tf.global_fx_on = not value
+
 def onFXSendValueRcv(fx_select, chan, value):
     if fx_select == 0:
         x2tf.fx1_sends[chan] = tf.fader_value_to_db(value)
@@ -137,11 +145,13 @@ class xctrltf:
         self.t.onFaderColorRcv = onFaderColorRcv
         self.t.onFaderNameRcv = onFaderNameRcv
         self.t.onFXSendValueRcv = onFXSendValueRcv
+        self.t.onGlobalMuteRcv = onGlobalMuteRcv
         self.t.onChannelMute = onChannelMute
         self.fader_select_en = [False] * 40
         self.fx1_sends = [-120] * 40
         self.fx2_sends =  [-120] * 40
         self.fader_offset = 0
+        self.global_fx_on = True
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
         self.fader_values = [1000]*40
@@ -241,6 +251,7 @@ class xctrltf:
         else:
             self.xtouch.GetButton('Aux').SetLED(False)
         self.xtouch.GetButton('PlugIn').SetLED(True) #encoder fx 
+        self.xtouch.GetButton('Global').SetLED(self.global_fx_on) #encoder fx 
 
     def periodicDisplayRefresh(self):
         while self.running:

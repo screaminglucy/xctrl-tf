@@ -95,6 +95,7 @@ class tf_rcp:
         self.onFaderColorRcv = None
         self.onFaderValueRcv = None
         self.onChannelMute = None
+        self.onGlobalMuteRcv = None
         self.connect()
 
     def connect(self):
@@ -206,6 +207,17 @@ class tf_rcp:
             cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1 ' + str(value) 
         self.send_command(cmd)
 
+    def sendGlobalFxMute (self, value):
+        cmd = 'set MIXER:Current/MuteMaster/On 1 0 '
+        if value:
+            cmd += '1'
+        else:
+            cmd += '0'
+        self.send_command(cmd)
+
+    def getGlobalFxMute (self):
+        cmd = 'get MIXER:Current/MuteMaster/On 1 0 '
+        self.send_command(cmd)
 
     def sendChannelMute(self,channel,value):
         if self.mix == 0:
@@ -275,6 +287,11 @@ class tf_rcp:
                                 name = messageString.split('"')[1]
                                 if self.onFaderColorRcv:
                                     self.onFaderColorRcv(chan,name)
+                            elif messageString.startswith('OK get MIXER:Current/MuteMaster/On 1 0') or messageString.startswith('NOTIFY set MIXER:Current/MuteMaster/On 1 0'):
+                                logger.debug(messageString)
+                                value = (int(messageString.split(' ')[5]) == 1)
+                                if self.onGlobalMuteRcv:
+                                    self.onGlobalMuteRcv(value)
                             elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix == 0) or \
                                   ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On')) and self.mix != 0):
                                 logger.debug(messageString)
