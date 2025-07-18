@@ -17,7 +17,10 @@ def updateTFFader (index,value):
         chan = x2tf.xtouchChToTFCh(index)
         x2tf.t.sendFaderValue(chan,db)
     if index == 8: #main fader
-        x2tf.t.sendMainFaderValue(db)
+        if x2tf.main_fader_rev == False:
+            x2tf.t.sendMainFaderValue(db)
+        else:
+            x2tf.t.sendMainFXFaderValue(db,x2tf.fx_select)
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
@@ -34,6 +37,9 @@ def onFaderNameRcv (chan, name):
 def onMainFaderValueRcv(val):
     x2tf.updateMainFader(val)
 
+def onMainFXFaderValueRcv(fx_select, value):
+    x2tf.updateMainFXFader(fx_select,value)
+
 def onFaderColorRcv (chan, color):
     x2tf.updateFaderColor(chan,color)
 
@@ -43,7 +49,7 @@ def onChannelMute(chan, value):
 
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
-    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name:
+    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name:
         button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
         if x2tf.fader_offset <=31:
@@ -96,6 +102,9 @@ def buttonPress (button):
        x2tf.global_fx_on = not x2tf.global_fx_on
        x2tf.t.sendGlobalFxMute (not x2tf.global_fx_on)
        x2tf.updateDisplay()
+    if button.name == 'Flip' and button.pressed == True:
+       x2tf.main_fader_rev = not x2tf.main_fader_rev
+       x2tf.updateDisplay()
     
 
 def onGlobalMuteRcv (value):
@@ -124,11 +133,7 @@ def encoderChange(index, direction):
             x2tf.updateFader(ch,x2tf.fader_values[ch])
             x2tf.t.sendFaderValue(ch,x2tf.fader_values[ch],noConvert=True)
 
-'''
-debug: [2025-07-17T23:12:48.482Z] Received: 'NOTIFY set MIXER:Current/FxRtnCh/Fader/On 1 0 0 "OFF"'
-NOTIFY set MIXER:Current/FxRtnCh/Fader/On 2 0 0 "OFF"'
-debug: [2025-07-17T23:13:41.179Z] Received: 'NOTIFY set MIXER:Current/FxRtnCh/Fader/On 3 0 0 "OFF"'
-'''
+
 
 class xctrltf:
 
@@ -141,9 +146,6 @@ class xctrltf:
         self.wait_for_connect()
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
-        self.xtouch.GetButton('Flip').setOnChange(XTouch.PrintFlip)
-        self.xtouch.GetButton('Flip').setOnDown(XTouch.FlipPress)
-        self.xtouch.GetButton('Flip').setOnUp(XTouch.FlipRelease)
         self.xtouch.setOnSliderChange(updateTFFader)
         self.t.setOnChMeterRcv(chMeterRcv)
         self.t.onFaderValueRcv = onFaderValueRcv
@@ -152,6 +154,7 @@ class xctrltf:
         self.t.onFaderNameRcv = onFaderNameRcv
         self.t.onFXSendValueRcv = onFXSendValueRcv
         self.t.onGlobalMuteRcv = onGlobalMuteRcv
+        self.t.onMainFXFaderValueRcv = onMainFXFaderValueRcv
         self.t.onChannelMute = onChannelMute
         self.fader_select_en = [False] * 40
         self.fx1_sends = [-120] * 40
@@ -162,6 +165,8 @@ class xctrltf:
         self.fader_colors = [7]*40
         self.fader_values = [1000]*40
         self.main_fader_value = 0
+        self.main_fader_rev = False
+        self.main_rev_fader_value = [0] * 2
         self.ch_mutes = [False]*40
         self.ch_map_by_color = list(range(40)) 
         self.color_order = [2,5,3,6,7,1,4,0]
@@ -228,9 +233,14 @@ class xctrltf:
         return v
 
     def updateDisplay(self):
-        maindb = tf.fader_value_to_db(self.main_fader_value)
-        mainv = XTouch.fader_db_to_value(maindb)
-        self.xtouch.SendSlider(8,mainv)
+        if self.main_fader_rev == False:
+            maindb = tf.fader_value_to_db(self.main_fader_value)
+            mainv = XTouch.fader_db_to_value(maindb)
+            self.xtouch.SendSlider(8,mainv)
+        else:
+            maindb = tf.fader_value_to_db(self.main_rev_fader_value[self.fx_select])
+            mainv = XTouch.fader_db_to_value(maindb)
+            self.xtouch.SendSlider(8,mainv)
         for i in range(8):
             chan = self.xtouchChToTFCh(i)
             db = tf.fader_value_to_db(self.fader_values[chan])
@@ -263,6 +273,7 @@ class xctrltf:
             self.xtouch.GetButton('Aux').SetLED(False)
         self.xtouch.GetButton('PlugIn').SetLED(True) #encoder fx 
         self.xtouch.GetButton('Global').SetLED(self.global_fx_on) #encoder fx 
+        self.xtouch.GetButton('Flip').SetLED(self.main_fader_rev) #main fader rev fx 
 
     def periodicDisplayRefresh(self):
         while self.running:
@@ -281,6 +292,10 @@ class xctrltf:
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
                     self.t.getMainFaderValue()
+                    time.sleep(0.01)
+                    self.t.getMainFXFaderValue(0)
+                    time.sleep(0.01)
+                    self.t.getMainFXFaderValue(1)
                     time.sleep(0.100)
                 self.updateDisplay()
                 time.sleep(1)
@@ -304,10 +319,19 @@ class xctrltf:
 
     def updateMainFader (self, value):
         self.main_fader_value = value
+        if self.main_fader_rev == False:
+            index = 8
+            db = tf.fader_value_to_db(value)
+            v = XTouch.fader_db_to_value(db)
+            self.xtouch.SendSlider(index,v)
+
+    def updateMainFXFader (self, fx, value):
+        self.main_rev_fader_value[fx] = value
         index = 8
-        db = tf.fader_value_to_db(value)
-        v = XTouch.fader_db_to_value(db)
-        self.xtouch.SendSlider(index,v)
+        if self.main_fader_rev and self.fx_select == fx:
+            db = tf.fader_value_to_db(value)
+            v = XTouch.fader_db_to_value(db)
+            self.xtouch.SendSlider(index,v)
 
     def updateFaderName(self,chan,value):
         if value == "" or value is None:

@@ -53,11 +53,11 @@ def detect_yamaha (timeout=30):
     b.append('255')
     b = '.'.join(b)
     logger.info ('broadcast to ' + b)
-    sock.sendto(message, (b, 54330))
-    sock.sendto(message5, (b, 54330))
     detect = False
     start = time.time()
     while detect == False and (time.time()-start) < timeout:
+        sock.sendto(message, (b, 54330))
+        sock.sendto(message5, (b, 54330))
         data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
         logger.info("received message: %s" % data)
         data_list = list(data)
@@ -98,6 +98,7 @@ class tf_rcp:
         self.onChannelMute = None
         self.onGlobalMuteRcv = None
         self.onMainFaderValueRcv = None
+        self.onMainFXFaderValueRcv = None
         self.connect()
 
     def connect(self):
@@ -179,6 +180,23 @@ class tf_rcp:
         else:
             cmd = 'get MIXER:Current/St/Fader/Level 0 0'
         self.send_command(cmd)
+
+    def getMainFXFaderValue (self, fx):
+        if self.mix != 0:
+            cmd = 'get MIXER:Current/FxRtnCh/ToMix/Level '+ str(fx*2)+' '+str(self.mix) 
+        else:
+            cmd = 'get MIXER:Current/FxRtnCh/Fader/Level '+ str(fx*2)+' 0'
+        self.send_command(cmd)
+
+    def sendMainFXFaderValue (self, db, fx):
+        v = fader_db_to_value(db) 
+        if self.mix != 0:
+            cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level '+ str(fx*2)+ ' '+ str(self.mix)+' '+v 
+        else:
+            cmd = 'set MIXER:Current/FxRtnCh/Fader/Level '+ str(fx*2)+' 0 '+v
+        if (time.time() - self.last_main_fader_update) > 0.100:
+            self.send_command(cmd)
+            self.last_main_fader_update = time.time() 
 
     def getFX1Send (self, channel):
         cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0' 
@@ -290,10 +308,16 @@ class tf_rcp:
                                 if self.onFaderValueRcv:
                                     self.onFaderValueRcv(chan,level)
                             elif ((messageString.startswith('OK get MIXER:Current/Mix/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/Mix/Fader/Level')) and self.mix != 0) or \
-                                  ((messageString.startswith('OK get MIXER:Current/St/Fader/Level') or messageString.startswith('NOTIFY setMIXER:Current/St/Fader/Level')) and self.mix == 0) :
+                                  ((messageString.startswith('OK get MIXER:Current/St/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/St/Fader/Level')) and self.mix == 0) :
                                 level = int(messageString.split(' ')[5])
                                 if self.onMainFaderValueRcv:
                                     self.onMainFaderValueRcv(level)
+                            elif ((messageString.startswith('OK get MIXER:Current/FxRtnCh/ToMix/Level') or messageString.startswith('NOTIFY set MIXER:Current/FxRtnCh/ToMix/Level')) and self.mix != 0) or \
+                                  ((messageString.startswith('OK get MIXER:Current/FxRtnCh/Fader/Level') or messageString.startswith('NOTIFY set MIXER:Current/FxRtnCh/Fader/Level')) and self.mix == 0) :
+                                fx_select = int (int(messageString.split(' ')[3]) / 2)
+                                level = int(messageString.split(' ')[5])
+                                if self.onMainFXFaderValueRcv:
+                                    self.onMainFXFaderValueRcv(fx_select,level)
                             elif messageString.startswith('OK get MIXER:Current/InCh/ToFx/Level') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToFx/Level')  :
                                 chan = int(messageString.split(' ')[3])
                                 fx_select = int(messageString.split(' ')[4])
