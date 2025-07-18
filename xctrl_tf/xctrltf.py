@@ -43,6 +43,9 @@ def onMainFXFaderValueRcv(fx_select, value):
 def onFaderColorRcv (chan, color):
     x2tf.updateFaderColor(chan,color)
 
+def onFaderIconRcv (chan, icon):
+    x2tf.updateFaderIcon(chan,icon)
+
 def onChannelMute(chan, value):
     value =  not value
     x2tf.updateChannelMute(chan,value)
@@ -116,15 +119,39 @@ def onFXSendValueRcv(fx_select, chan, value):
     if fx_select == 1:
         x2tf.fx2_sends[chan] = tf.fader_value_to_db(value)
 
+def onFXSendEnValueRcv (fx_select, chan, on):
+    logger.debug ('fx_select ' +str(fx_select) + 'chan '+str(chan)+' on '+str(on))
+    v = False
+    if on == 1:
+        v = True
+    if fx_select == 0:
+        x2tf.fx1_send_en[chan] = v
+    if fx_select == 1:
+        x2tf.fx2_send_en[chan] = v
+
 def encoderChange(index, direction):
     logger.info ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchChToTFCh(index)
+    if (x2tf.fx2_send_en[chan] and x2tf.fx1_send_en[chan]) or (not x2tf.fx2_send_en[chan] and not x2tf.fx1_send_en[chan]):
         if x2tf.fx_select == 0:
+            fx = 0
+        else:
+            fx = 1
+    elif x2tf.fx2_send_en[chan]:
+        fx = 1
+    else:
+        fx = 0
+    if (index < 8):
+        if fx == 0:
             x2tf.fx1_sends[chan] = x2tf.fx1_sends[chan] + (2.5 * direction)
+            if x2tf.fx1_sends[chan] >= 0:
+                x2tf.fx1_sends[chan] = 0
             x2tf.t.sendFXSend(0,chan,x2tf.fx1_sends[chan])
         else:
             x2tf.fx2_sends[chan] = x2tf.fx2_sends[chan] + (2.5 * direction)
+            if x2tf.fx2_sends[chan] >= 0:
+                x2tf.fx2_sends[chan] = 0
             x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
     if index == 44: #big knob
         chlist=x2tf.getChSelected()
@@ -156,20 +183,26 @@ class xctrltf:
         self.t.onGlobalMuteRcv = onGlobalMuteRcv
         self.t.onMainFXFaderValueRcv = onMainFXFaderValueRcv
         self.t.onChannelMute = onChannelMute
+        self.t.onFaderIconRcv = onFaderIconRcv
+        self.t.onFXSendEnValueRcv = onFXSendEnValueRcv
         self.fader_select_en = [False] * 40
         self.fx1_sends = [-120] * 40
         self.fx2_sends =  [-120] * 40
+        self.fx1_send_en = [False] * 40
+        self.fx2_send_en = [False] * 40
         self.fader_offset = 0
         self.global_fx_on = True
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
+        self.fader_icons = ['none']*40
         self.fader_values = [1000]*40
         self.main_fader_value = 0
         self.main_fader_rev = False
         self.main_rev_fader_value = [0] * 2
         self.ch_mutes = [False]*40
-        self.ch_map_by_color = list(range(40)) 
-        self.color_order = [2,5,3,6,7,1,4,0]
+        self.ch_custom_map = list(range(40)) 
+        self.color_order = [2,5,7,6,3,1,4,0]
+        self.icon_order = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
         self.running = True
         _thread.start_new_thread(self.periodicDisplayRefresh, ())
     
@@ -180,6 +213,8 @@ class xctrltf:
             self.t.getFaderName(i)
             time.sleep(0.01)
             self.t.getFaderColor(i)
+            time.sleep(0.01)
+            self.t.getFaderIcon(i)
             time.sleep(0.01)
             self.t.getChannelOn(i)
             time.sleep(0.01)
@@ -202,24 +237,26 @@ class xctrltf:
         #    Pink = 5 (purple)
         #    Cyan = 6 (skyblue)
         #    White = 7 (orange)
+        logger.info ("fader icons")
+        logger.info (str(self.fader_icons))
         new_map = []
         for c in self.color_order:
             for index, fc in enumerate(self.fader_colors):
                 if fc == c:
                     new_map.append(index)
-        self.ch_map_by_color = new_map
+        self.ch_custom_map = new_map
 
     def xtouchChToTFCh (self, fader_index):
         if self.map_by_color_en == False:
             return self.fader_offset + fader_index
         else:
-            return self.ch_map_by_color[self.fader_offset + fader_index]
+            return self.ch_custom_map[self.fader_offset + fader_index]
     
     def tfChToXtouchCh (self, chan_index):
         if self.map_by_color_en == False:
             return chan_index - self.fader_offset
         else:
-            return self.ch_map_by_color.index(chan_index) - self.fader_offset
+            return self.ch_custom_map.index(chan_index) - self.fader_offset
     
     def dbToEncoder (self, db):
         if db >= 0:
@@ -231,6 +268,19 @@ class xctrltf:
         if v < -6:
             v = -6
         return v
+
+    def chooseFX (self, chan):
+        logger.debug (str(self.fx1_send_en) + '   '+ str(self.fx2_send_en))
+        if (self.fx2_send_en[chan] and self.fx1_send_en[chan]) or (not self.fx2_send_en[chan] and not self.fx1_send_en[chan]):
+            if self.fx_select == 0:
+                fx = 0
+            else:
+                fx = 1
+        elif self.fx2_send_en[chan]:
+            fx = 1
+        else:
+            fx = 0
+        return fx
 
     def updateDisplay(self):
         if self.main_fader_rev == False:
@@ -246,8 +296,17 @@ class xctrltf:
             db = tf.fader_value_to_db(self.fader_values[chan])
             v = XTouch.fader_db_to_value(db)
             self.xtouch.SendSlider(i,v)
-            self.xtouch.SendScribble(i, self.fader_names[chan], str(chan+1), self.fader_colors[chan], False)
-            if self.fx_select == 0:
+            name = self.fader_names[chan][0:6]
+            channelno = str(chan+1)[0:6]
+            if self.fader_names[chan][6:] != "":
+                channelno = (self.fader_names[chan][6:]+' '+str(chan+1))[0:6]
+            color = self.fader_colors[chan]
+            logger.info ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
+            self.xtouch.SendScribble(i, name, channelno, color, False)
+            #choose fx index
+            fx = self.chooseFX(chan)
+            #update encoder
+            if fx == 0:
                 self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
             else:
                 self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
@@ -338,6 +397,11 @@ class xctrltf:
             value = str(chan)
         self.fader_names[chan] = value
     
+    def updateFaderIcon (self, chan, icon):
+        if icon == "" or icon is None:
+            icon = "none"
+        self.fader_icons[chan] = icon
+
     def updateFaderColor(self,chan,value):
         index = self.tfChToXtouchCh(chan)
         try:
@@ -352,6 +416,8 @@ class xctrltf:
             else:
                 color = 7
                 logger.warning (value + " no color match using white!")
+        if color == 0: #we dont want any "off"
+            color = 7
         self.fader_colors[chan] = color
 
     def update_meter (self, location, value):

@@ -99,6 +99,8 @@ class tf_rcp:
         self.onGlobalMuteRcv = None
         self.onMainFaderValueRcv = None
         self.onMainFXFaderValueRcv = None
+        self.onFXSendEnValueRcv = None
+        self.onFaderIconRcv = None
         self.connect()
 
     def connect(self):
@@ -202,11 +204,16 @@ class tf_rcp:
         cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0' 
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
+        cmd = 'get MIXER:Current/InCh/ToFx/On ' + str(channel) + ' 0'
+        self.send_command(cmd)
+
 
     def getFX2Send (self, channel):
         cmd = 'get MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1' 
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
+        cmd = 'get MIXER:Current/InCh/ToFx/On ' + str(channel) + ' 1'
+        self.send_command(cmd)
 
     def getFaderName (self, channel):
         cmd = 'get MIXER:Current/InCh/Label/Name ' + str(channel)+' 0' 
@@ -215,6 +222,11 @@ class tf_rcp:
 
     def getFaderColor(self,channel):
         cmd = 'get MIXER:Current/InCh/Label/Color ' + str(channel)+' 0' 
+        self.send_command(cmd)
+        logger.debug ('sent '+cmd)
+
+    def getFaderIcon(self,channel):
+        cmd = 'get MIXER:Current/InCh/Label/Icon ' + str(channel)+' 0' 
         self.send_command(cmd)
         logger.debug ('sent '+cmd)
 
@@ -324,6 +336,12 @@ class tf_rcp:
                                 level = int(messageString.split(' ')[5])
                                 if self.onFXSendValueRcv:
                                     self.onFXSendValueRcv(fx_select, chan,level)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/ToFx/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToFx/On')  :
+                                chan = int(messageString.split(' ')[3])
+                                fx_select = int(messageString.split(' ')[4])
+                                on = int(messageString.split(' ')[5])
+                                if self.onFXSendEnValueRcv:
+                                    self.onFXSendEnValueRcv(fx_select, chan,on)
                             elif messageString.startswith('OK get MIXER:Current/InCh/Label/Name') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Label/Name'):
                                 chan = int(messageString.split(' ')[3])
                                 name = messageString.split('"')[1]
@@ -335,6 +353,12 @@ class tf_rcp:
                                 name = messageString.split('"')[1]
                                 if self.onFaderColorRcv:
                                     self.onFaderColorRcv(chan,name)
+                            elif messageString.startswith('OK get MIXER:Current/InCh/Label/Icon') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Label/Icon'):
+                                logger.debug(messageString)
+                                chan = int(messageString.split(' ')[3])
+                                icon = messageString.split('"')[1]
+                                if self.onFaderIconRcv:
+                                    self.onFaderIconRcv(chan,icon)
                             elif messageString.startswith('OK get MIXER:Current/MuteMaster/On 1 0') or messageString.startswith('NOTIFY set MIXER:Current/MuteMaster/On 1 0'):
                                 logger.debug(messageString)
                                 value = (int(messageString.split(' ')[5]) == 1)
