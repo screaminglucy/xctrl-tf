@@ -159,6 +159,11 @@ def encoderChange(index, direction):
                 x2tf.fx2_sends[chan] = 0
             x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
         x2tf.pendingDisplayUpdate = True
+        #update encoder
+        if fx == 0:
+            x2tf.xtouch.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx1_sends[chan]))
+        else:
+            x2tf.xtouch.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx2_sends[chan]))
     if index == 44: #big knob
         chlist=x2tf.getChSelected()
         stop = False
