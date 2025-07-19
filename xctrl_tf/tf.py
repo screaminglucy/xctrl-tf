@@ -59,7 +59,7 @@ def detect_yamaha (timeout=30):
     print(message5)
     message = b"YSDP\x00H\x00\x04"
     message += ip_bytes
-    message += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18\xc0"
+    message += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     message += mac_address_bytearray
     message += b"\x08_ypax-tf\x00%\x12Yamaha Corporation\x07TF-RACK\x09Yamaha TF"
     sock.bind(('', 54330))
