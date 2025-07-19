@@ -30,11 +30,15 @@ def get_mac_addr():
     print(f"my MAC Address: {mac_address}")
     return mac_address
 
+
 def get_ip():
-  """Retrieves the local IP address of the machine."""
-  hostname = socket.gethostname()
-  local_ip = socket.gethostbyname(hostname)
-  return local_ip
+    """Retrieves the local IP address of the machine."""
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    if local_ip[0:3] == '127':
+    hostname = hostname+'.local' #for linux/rpi
+    local_ip = socket.gethostbyname(hostname)
+    return local_ip
 
 def detect_yamaha (timeout=30): 
     #send udp broadcast to probe for mixer
@@ -73,7 +77,7 @@ def detect_yamaha (timeout=30):
         data_list = list(data)
         logger.debug (data_list)
         ip = addr[0]
-        if ip!=get_ip() and ip!='127.0.0.1':
+        if ip!=get_ip() and ip!= '127.0.0.1':
             logger.info (ip)
             logger.info ('detected yamaha')
             detect = True
