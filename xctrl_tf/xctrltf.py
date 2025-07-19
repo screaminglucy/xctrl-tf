@@ -59,17 +59,17 @@ def buttonPress (button):
     if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name:
         button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
-        if x2tf.fader_offset <=31:
+        if x2tf.fader_offset <=23:
             x2tf.fader_offset += 8
-            if x2tf.fader_offset > 32:
-                x2tf.fader_offset = 32
+            if x2tf.fader_offset > 24:
+                x2tf.fader_offset = 24
         x2tf.updateDisplay()
     if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
             x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
-        if x2tf.fader_offset <= 31:
+        if x2tf.fader_offset <= 23:
             x2tf.fader_offset += 1
             x2tf.updateDisplay()
     if button.name == 'ChannelLeft' and button.pressed:
@@ -117,12 +117,14 @@ def buttonPress (button):
 
 def onGlobalMuteRcv (value):
     x2tf.global_fx_on = not value
+    x2tf.pendingDisplayUpdate = True
 
 def onFXSendValueRcv(fx_select, chan, value):
     if fx_select == 0:
         x2tf.fx1_sends[chan] = tf.fader_value_to_db(value)
     if fx_select == 1:
         x2tf.fx2_sends[chan] = tf.fader_value_to_db(value)
+    x2tf.pendingDisplayUpdate = True
 
 def onFXSendEnValueRcv (fx_select, chan, on):
     logger.debug ('fx_select ' +str(fx_select) + 'chan '+str(chan)+' on '+str(on))
@@ -133,6 +135,7 @@ def onFXSendEnValueRcv (fx_select, chan, on):
         x2tf.fx1_send_en[chan] = v
     if fx_select == 1:
         x2tf.fx2_send_en[chan] = v
+    x2tf.pendingDisplayUpdate = True
 
 last_encoder_time = time.time()
 
@@ -152,6 +155,7 @@ def encoderChange(index, direction):
             if x2tf.fx2_sends[chan] >= 0:
                 x2tf.fx2_sends[chan] = 0
             x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
+        x2tf.pendingDisplayUpdate = True
     if index == 44: #big knob
         chlist=x2tf.getChSelected()
         stop = False
@@ -178,6 +182,7 @@ class xctrltf:
     def __init__(self, xtouch_ip='192.168.10.9', tf_ip='192.168.10.5'):
         self.map_by_color_en = False
         self.fx_select = 0
+        self.pendingDisplayUpdate = True
         self.t = tf.tf_rcp(tf_ip)
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.connected = False
@@ -219,9 +224,13 @@ class xctrltf:
         self.icon_order = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
         self.running = True
         _thread.start_new_thread(self.periodicDisplayRefresh, ())
-    
+        if self.t.mix != 0:
+            self.xtouch.GetButton('Aux').SetLED(True)
+        else:
+            self.xtouch.GetButton('Aux').SetLED(False)
+
     def syncTF2XTouch (self):
-        for i in range(40):
+        for i in range(32):
             self.t.getFaderValue(i)
             time.sleep(0.01)
             self.t.getFaderName(i)
@@ -253,13 +262,17 @@ class xctrltf:
         #    Pink = 5 (purple)
         #    Cyan = 6 (skyblue)
         #    White = 7 (orange)
+        #icons = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
         logger.info ("fader icons")
         logger.info (str(self.fader_icons))
         new_map = []
+        '''
         for c in self.color_order:
             for index, fc in enumerate(self.fader_colors):
                 if fc == c:
                     new_map.append(index)
+        '''
+        new_map = [0,1,2,3,4,5,6,25,8,12,13,9,11,10,14,26,16,17,18,19,27,28,30,31,24,29,7,15,20,21,22,23] #custom grouping
         self.ch_custom_map = new_map
 
     def xtouchChToTFCh (self, fader_index):
@@ -362,10 +375,6 @@ class xctrltf:
             self.xtouch.GetButton('Ch6Rec').SetLED(self.getChannelOn(5))
             self.xtouch.GetButton('Ch7Rec').SetLED(self.getChannelOn(6))
             self.xtouch.GetButton('Ch8Rec').SetLED(self.getChannelOn(7))
-            if self.t.mix != 0:
-                self.xtouch.GetButton('Aux').SetLED(True)
-            else:
-                self.xtouch.GetButton('Aux').SetLED(False)
             self.xtouch.GetButton('PlugIn').SetLED(True) #encoder fx 
             self.xtouch.GetButton('Global').SetLED(self.global_fx_on) #encoder fx 
             self.xtouch.GetButton('Flip').SetLED(self.main_fader_rev) #main fader rev fx 
@@ -395,7 +404,9 @@ class xctrltf:
                 time.sleep(0.01)
                 self.t.getMainFXFaderValue(1)
                 time.sleep(0.100)
-                self.updateDisplay()
+                if self.pendingDisplayUpdate:
+                    self.updateDisplay()
+                    self.pendingDisplayUpdate = False
                 time.sleep(1)
 
     def wait_for_connect (self):
@@ -409,9 +420,11 @@ class xctrltf:
     
     def updateChannelMute(self,chan, value):
         self.ch_mutes[chan] = value
+        self.pendingDisplayUpdate = True
 
     def updateChannelMasterMute(self, chan, value):
         self.ch_master_mutes[chan] = value
+        self.pendingDisplayUpdate = True
 
     def updateFader (self, chan,value):
         self.fader_values[chan] = value
@@ -511,12 +524,14 @@ while running:
             time.sleep(5)
             x2tf.syncTF2XTouch()
             firstSync = False
+            x2tf.pendingDisplayUpdate = True
             synced = True
         else:
             if synced == False:
                 time.sleep(2)
                 x2tf.syncTF2XTouch()
                 logger.info ("syncing after reconnect")
+                x2tf.pendingDisplayUpdate = True
                 synced = True
     else:
         synced=False
