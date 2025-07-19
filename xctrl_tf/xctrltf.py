@@ -83,6 +83,7 @@ def buttonPress (button):
         ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
         x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)]
         x2tf.t.sendChannelMute(x2tf.xtouchChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
+        button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
@@ -109,9 +110,11 @@ def buttonPress (button):
     if button.name == 'Global' and button.pressed == True:
        x2tf.global_fx_on = not x2tf.global_fx_on
        x2tf.t.sendGlobalFxMute (not x2tf.global_fx_on)
+       button.SetLED(x2tf.global_fx_on)
        x2tf.updateDisplay()
     if button.name == 'Flip' and button.pressed == True:
        x2tf.main_fader_rev = not x2tf.main_fader_rev
+       button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
     
 
@@ -385,29 +388,20 @@ class xctrltf:
             if self.connected:
                 for i in range(8):
                     self.t.getFaderValue(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
                     if i % 4 == 0:
                         self.t.getFaderName(self.xtouchChToTFCh(i))
-                        time.sleep(0.01)
                         self.t.getFaderColor(self.xtouchChToTFCh(i))
-                        time.sleep(0.01)
                         i = 1
                     self.t.getChannelOn(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
                 self.t.getMainFaderValue()
-                time.sleep(0.01)
                 self.t.getMainFXFaderValue(0)
-                time.sleep(0.01)
                 self.t.getMainFXFaderValue(1)
-                time.sleep(0.100)
                 if self.pendingDisplayUpdate:
                     self.updateDisplay()
                     self.pendingDisplayUpdate = False
-                time.sleep(1)
+                time.sleep(0.5)
 
     def wait_for_connect (self):
         while (self.xtouch._active == False) or (self.t._active == False):
