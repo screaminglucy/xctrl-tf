@@ -50,6 +50,10 @@ def onChannelMute(chan, value):
     value =  not value
     x2tf.updateChannelMute(chan,value)
 
+def onChannelMasterMute (chan,value):
+    value = not value
+    x2tf.updateChannelMasterMute(chan,value)
+
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
     if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name:
@@ -192,6 +196,7 @@ class xctrltf:
         self.t.onChannelMute = onChannelMute
         self.t.onFaderIconRcv = onFaderIconRcv
         self.t.onFXSendEnValueRcv = onFXSendEnValueRcv
+        self.t.onChannelMasterMute = onChannelMasterMute
         self.fader_select_en = [False] * 40
         self.fx1_sends = [-120] * 40
         self.fx2_sends =  [-120] * 40
@@ -208,6 +213,7 @@ class xctrltf:
         self.main_fader_rev = False
         self.main_rev_fader_value = [0] * 2
         self.ch_mutes = [False]*40
+        self.ch_master_mutes = [False] * 40
         self.ch_custom_map = list(range(40)) 
         self.color_order = [2,5,7,6,3,1,4,0]
         self.icon_order = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
@@ -230,6 +236,8 @@ class xctrltf:
             time.sleep(0.01)
             self.t.getFX2Send(i)
         self.t.getMainFaderValue()
+        self.t.getMainFXFaderValue(0)
+        self.t.getMainFXFaderValue(1)
 
     def getChSelected (self):
         true_indices = [i for i, val in enumerate(self.fader_select_en) if val]
@@ -289,6 +297,14 @@ class xctrltf:
         else:
             fx = 0
         return fx
+    
+    def getChannelOn (self, xtouchIndex):
+        chan = self.xtouchChToTFCh(xtouchIndex)
+        master = self.ch_master_mutes[chan]
+        aux = self.ch_mutes[chan]
+        if master or aux:
+            return False
+        return True
 
     def updateDisplay(self):
         if self.t._active == False:
@@ -338,6 +354,14 @@ class xctrltf:
             self.xtouch.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(5)])
             self.xtouch.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(6)])
             self.xtouch.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(7)])
+            self.xtouch.GetButton('Ch1Rec').SetLED(self.getChannelOn(0))
+            self.xtouch.GetButton('Ch2Rec').SetLED(self.getChannelOn(1))
+            self.xtouch.GetButton('Ch3Rec').SetLED(self.getChannelOn(2))
+            self.xtouch.GetButton('Ch4Rec').SetLED(self.getChannelOn(3))
+            self.xtouch.GetButton('Ch5Rec').SetLED(self.getChannelOn(4))
+            self.xtouch.GetButton('Ch6Rec').SetLED(self.getChannelOn(5))
+            self.xtouch.GetButton('Ch7Rec').SetLED(self.getChannelOn(6))
+            self.xtouch.GetButton('Ch8Rec').SetLED(self.getChannelOn(7))
             if self.t.mix != 0:
                 self.xtouch.GetButton('Aux').SetLED(True)
             else:
@@ -348,26 +372,29 @@ class xctrltf:
 
     def periodicDisplayRefresh(self):
         while self.running:
+            i = 0
             if self.connected:
                 for i in range(8):
                     self.t.getFaderValue(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
-                    self.t.getFaderName(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
-                    self.t.getFaderColor(self.xtouchChToTFCh(i))
-                    time.sleep(0.01)
+                    if i % 4 == 0:
+                        self.t.getFaderName(self.xtouchChToTFCh(i))
+                        time.sleep(0.01)
+                        self.t.getFaderColor(self.xtouchChToTFCh(i))
+                        time.sleep(0.01)
+                        i = 1
                     self.t.getChannelOn(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
                     time.sleep(0.01)
-                    self.t.getMainFaderValue()
-                    time.sleep(0.01)
-                    self.t.getMainFXFaderValue(0)
-                    time.sleep(0.01)
-                    self.t.getMainFXFaderValue(1)
-                    time.sleep(0.100)
+                self.t.getMainFaderValue()
+                time.sleep(0.01)
+                self.t.getMainFXFaderValue(0)
+                time.sleep(0.01)
+                self.t.getMainFXFaderValue(1)
+                time.sleep(0.100)
                 self.updateDisplay()
                 time.sleep(1)
 
@@ -379,6 +406,9 @@ class xctrltf:
     
     def updateChannelMute(self,chan, value):
         self.ch_mutes[chan] = value
+
+    def updateChannelMasterMute(self, chan, value):
+        self.ch_master_mutes[chan] = value
 
     def updateFader (self, chan,value):
         self.fader_values[chan] = value

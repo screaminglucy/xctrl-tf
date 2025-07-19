@@ -101,6 +101,7 @@ class tf_rcp:
         self.onMainFXFaderValueRcv = None
         self.onFXSendEnValueRcv = None
         self.onFaderIconRcv = None
+        self.onChannelMasterMute = None
         self.connect()
 
     def connect(self):
@@ -234,11 +235,11 @@ class tf_rcp:
         logger.debug ('sent '+cmd)
 
     def getChannelOn(self,channel):
-        if self.mix == 0:
-            cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
-        else:
-            cmd = 'get MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.mix)+' 1'
+        cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
         self.send_command(cmd)
+        if self.mix != 0:
+            cmd = 'get MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.mix)+' 1'
+            self.send_command(cmd)
         logger.debug ('sent '+cmd)
     
     def sendFXSend(self,fx,channel,db):
@@ -382,6 +383,15 @@ class tf_rcp:
                                     value = True
                                 if self.onChannelMute:
                                     self.onChannelMute(chan,value)
+                            elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix != 0):
+                                chan = int(messageString.split(' ')[3])
+                                value = int(messageString.split(' ')[5])
+                                if value == 0:
+                                    value = False
+                                else:
+                                    value = True
+                                if self.onChannelMasterMute:
+                                    self.onChannelMasterMute(chan,value)
                             elif messageString.startswith("ERROR"):
                                 logger.error(f"Received: {message.decode()}")
                             else:
