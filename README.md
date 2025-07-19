@@ -11,7 +11,7 @@ To run on Raspberry Pi:
 
 To run automatically on Raspberry Pi:
 
-1. Create .desktop file and place in ~/.config/AutoStart
+1. Create .desktop file and place in ~/.config/autoStart
 2. Put the following in the desktop file:
 ```
 [Desktop Entry]
