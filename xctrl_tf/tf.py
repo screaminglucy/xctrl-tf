@@ -6,6 +6,8 @@ import threading
 import _thread
 from tfmeter import meter_dict
 import queue
+from uuid import getnode as get_mac
+import binascii
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +24,11 @@ def fader_value_to_db (value):
     db = value / 100
     return db
 
+def get_mac_addr():
+    mac_int = get_mac()
+    mac_address = ':'.join(("%012X" % mac_int)[i:i+2] for i in range(0, 12, 2))
+    print(f"my MAC Address: {mac_address}")
+    return mac_address
 
 def get_ip():
   """Retrieves the local IP address of the machine."""
@@ -35,19 +42,22 @@ def detect_yamaha (timeout=30):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
     ip = get_ip()
+    mac_address_str = get_mac_addr()
+    mac_address_hex = mac_address_str.replace(":", "").replace("-", "").lower()
+    mac_address_bytearray = bytearray(binascii.unhexlify(mac_address_hex))
     logger.info ('my ip is '+ip)
     ip_bytes = socket.inet_aton(ip)
     message5 = b"YSDP\x00D\x00\x04"
     message5 += ip_bytes
-    message5 += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18\xc0"
-    message5 += b"M1\xc9\x20\x08"
-    message5 += b"_ypax-tf\x00!\x12Yamaha Corporation\x03TF5\x09Yamaha TF"
-
+    message5 += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    message5 += mac_address_bytearray
+    message5 += b"\x08_ypax-tf\x00!\x12Yamaha Corporation\x03TF5\x09Yamaha TF"
+    print(message5)
     message = b"YSDP\x00H\x00\x04"
     message += ip_bytes
     message += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18\xc0"
-    message += b"M1\xc9\x20\x08"
-    message += b"_ypax-tf\x00%\x12Yamaha Corporation\x07TF-RACK\x09Yamaha TF"
+    message += mac_address_bytearray
+    message += b"\x08_ypax-tf\x00%\x12Yamaha Corporation\x07TF-RACK\x09Yamaha TF"
     sock.bind(('', 54330))
     b = (ip.split('.'))[:-1]
     b.append('255')
@@ -59,11 +69,11 @@ def detect_yamaha (timeout=30):
         sock.sendto(message, (b, 54330))
         sock.sendto(message5, (b, 54330))
         data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-        logger.info("received message: %s" % data)
+        logger.debug("received message: %s" % data)
         data_list = list(data)
         logger.debug (data_list)
         ip = addr[0]
-        if ip!=get_ip():
+        if ip!=get_ip() and ip!='127.0.0.1':
             logger.info (ip)
             logger.info ('detected yamaha')
             detect = True

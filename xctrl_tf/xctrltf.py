@@ -401,7 +401,10 @@ class xctrltf:
     def wait_for_connect (self):
         while (self.xtouch._active == False) or (self.t._active == False):
             time.sleep(1)
-            print ("waiting to connect...")
+            if self.xtouch._active == False:
+                print ("waiting to connect to xtouch...")
+            if self.t._active == False:
+                print ("waiting to connect to tf...")
         self.connected = True
     
     def updateChannelMute(self,chan, value):
