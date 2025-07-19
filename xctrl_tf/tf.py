@@ -143,7 +143,7 @@ class tf_rcp:
                 time.sleep(5)
             self.sock.close()
 
-    def SendKeepAlive(self, timeout=10):
+    def SendKeepAlive(self, timeout=5):
         if self.running:
             if self._active:
                 self.send_command("devstatus runmode")

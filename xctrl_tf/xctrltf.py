@@ -291,56 +291,60 @@ class xctrltf:
         return fx
 
     def updateDisplay(self):
-        if self.main_fader_rev == False:
-            maindb = tf.fader_value_to_db(self.main_fader_value)
-            mainv = XTouch.fader_db_to_value(maindb)
-            self.xtouch.SendSlider(8,mainv)
+        if self.t._active == False:
+            for i in range(8):
+                self.xtouch.SendScribble(i, 'Discon', 'nected', 1, False)
         else:
-            maindb = tf.fader_value_to_db(self.main_rev_fader_value[self.fx_select])
-            mainv = XTouch.fader_db_to_value(maindb)
-            self.xtouch.SendSlider(8,mainv)
-        for i in range(8):
-            chan = self.xtouchChToTFCh(i)
-            db = tf.fader_value_to_db(self.fader_values[chan])
-            v = XTouch.fader_db_to_value(db)
-            self.xtouch.SendSlider(i,v)
-            name = self.fader_names[chan][0:6]
-            channelno = str(chan+1)[0:6]
-            if self.fader_names[chan][6:] != "":
-                channelno = (self.fader_names[chan][6:]+' '+str(chan+1))[0:6]
-            color = self.fader_colors[chan]
-            logger.debug ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
-            self.xtouch.SendScribble(i, name, channelno, color, False)
-            #choose fx index
-            fx = self.chooseFX(chan)
-            #update encoder
-            if fx == 0:
-                self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
+            if self.main_fader_rev == False:
+                maindb = tf.fader_value_to_db(self.main_fader_value)
+                mainv = XTouch.fader_db_to_value(maindb)
+                self.xtouch.SendSlider(8,mainv)
             else:
-                self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
-        self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(0)])
-        self.xtouch.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(1)])
-        self.xtouch.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(2)])
-        self.xtouch.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(3)])
-        self.xtouch.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(4)])
-        self.xtouch.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(5)])
-        self.xtouch.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(6)])
-        self.xtouch.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(7)])
-        self.xtouch.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(0)])
-        self.xtouch.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(1)])
-        self.xtouch.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(2)])
-        self.xtouch.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(3)])
-        self.xtouch.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(4)])
-        self.xtouch.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(5)])
-        self.xtouch.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(6)])
-        self.xtouch.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(7)])
-        if self.t.mix != 0:
-            self.xtouch.GetButton('Aux').SetLED(True)
-        else:
-            self.xtouch.GetButton('Aux').SetLED(False)
-        self.xtouch.GetButton('PlugIn').SetLED(True) #encoder fx 
-        self.xtouch.GetButton('Global').SetLED(self.global_fx_on) #encoder fx 
-        self.xtouch.GetButton('Flip').SetLED(self.main_fader_rev) #main fader rev fx 
+                maindb = tf.fader_value_to_db(self.main_rev_fader_value[self.fx_select])
+                mainv = XTouch.fader_db_to_value(maindb)
+                self.xtouch.SendSlider(8,mainv)
+            for i in range(8):
+                chan = self.xtouchChToTFCh(i)
+                db = tf.fader_value_to_db(self.fader_values[chan])
+                v = XTouch.fader_db_to_value(db)
+                self.xtouch.SendSlider(i,v)
+                name = self.fader_names[chan][0:6]
+                channelno = str(chan+1)[0:6]
+                if self.fader_names[chan][6:] != "":
+                    channelno = (self.fader_names[chan][6:]+' '+str(chan+1))[0:6]
+                color = self.fader_colors[chan]
+                logger.debug ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
+                self.xtouch.SendScribble(i, name, channelno, color, False)
+                #choose fx index
+                fx = self.chooseFX(chan)
+                #update encoder
+                if fx == 0:
+                    self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
+                else:
+                    self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
+            self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(0)])
+            self.xtouch.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(1)])
+            self.xtouch.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(2)])
+            self.xtouch.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(3)])
+            self.xtouch.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(4)])
+            self.xtouch.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(5)])
+            self.xtouch.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(6)])
+            self.xtouch.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(7)])
+            self.xtouch.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(0)])
+            self.xtouch.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(1)])
+            self.xtouch.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(2)])
+            self.xtouch.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(3)])
+            self.xtouch.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(4)])
+            self.xtouch.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(5)])
+            self.xtouch.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(6)])
+            self.xtouch.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(7)])
+            if self.t.mix != 0:
+                self.xtouch.GetButton('Aux').SetLED(True)
+            else:
+                self.xtouch.GetButton('Aux').SetLED(False)
+            self.xtouch.GetButton('PlugIn').SetLED(True) #encoder fx 
+            self.xtouch.GetButton('Global').SetLED(self.global_fx_on) #encoder fx 
+            self.xtouch.GetButton('Flip').SetLED(self.main_fader_rev) #main fader rev fx 
 
     def periodicDisplayRefresh(self):
         while self.running:
@@ -448,16 +452,41 @@ class xctrltf:
         self.running = False
     
 
+running = True
 
+print ("Press q to quit")
+
+def on_key_event(event):
+    global running
+    if event.name == 'q' and event.event_type == keyboard.KEY_DOWN:
+        print(" 'q' pressed. Exiting loop.")
+        running = False
+
+keyboard.on_press(on_key_event)
 
 x2tf = xctrltf()
-time.sleep(5)
-x2tf.syncTF2XTouch()
-time.sleep(2)
-x2tf.syncTF2XTouch()
-time.sleep(2)
-x2tf.syncTF2XTouch()
-input("Press enter to quit...")
+firstSync = True
+synced = False
+while running:
+    time.sleep(1)
+    if x2tf.t._active:
+        if firstSync:
+            time.sleep(5)
+            x2tf.syncTF2XTouch()
+            time.sleep(5)
+            x2tf.syncTF2XTouch()
+            time.sleep(5)
+            x2tf.syncTF2XTouch()
+            firstSync = False
+            synced = True
+        else:
+            if synced == False:
+                time.sleep(2)
+                x2tf.syncTF2XTouch()
+                logger.info ("syncing after reconnect")
+                synced = True
+    else:
+        synced=False
 x2tf.stop_running()
 
 
