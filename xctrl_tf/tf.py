@@ -36,7 +36,7 @@ def get_ip():
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     if local_ip[0:3] == '127':
-    hostname = hostname+'.local' #for linux/rpi
+        hostname = hostname+'.local' #for linux/rpi
     local_ip = socket.gethostbyname(hostname)
     return local_ip
 
