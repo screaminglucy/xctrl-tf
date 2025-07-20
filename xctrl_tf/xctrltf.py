@@ -87,8 +87,8 @@ def buttonPress (button):
         button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
         x2tf.updateDisplay()
     if 'Drop' in button.name and button.pressed==True:
-        self.mute_first_bank = not self.mute_first_bank
-        button.SetLED(self.mute_first_bank)
+        x2tf.mute_first_bank = not x2tf.mute_first_bank
+        button.SetLED(x2tf.mute_first_bank)
         if self.mute_first_bank:
             val = True
         else:
