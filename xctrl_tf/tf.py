@@ -391,8 +391,7 @@ class tf_rcp:
                                 value = (int(messageString.split(' ')[5]) == 1)
                                 if self.onGlobalMuteRcv:
                                     self.onGlobalMuteRcv(value)
-                            elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix == 0) or \
-                                  ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On')) and self.mix != 0):
+                            elif ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On')) and self.mix != 0):
                                 logger.debug(messageString)
                                 chan = int(messageString.split(' ')[3])
                                 value = int(messageString.split(' ')[5])
@@ -402,7 +401,7 @@ class tf_rcp:
                                     value = True
                                 if self.onChannelMute:
                                     self.onChannelMute(chan,value)
-                            elif ((messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')) and self.mix != 0):
+                            elif (messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')):
                                 chan = int(messageString.split(' ')[3])
                                 value = int(messageString.split(' ')[5])
                                 if value == 0:
@@ -411,6 +410,9 @@ class tf_rcp:
                                     value = True
                                 if self.onChannelMasterMute:
                                     self.onChannelMasterMute(chan,value)
+                                if self.mix == 0:
+                                    if self.onChannelMute:
+                                        self.onChannelMute(chan,value)
                             elif messageString.startswith("ERROR"):
                                 logger.error(f"Received: {message.decode()}")
                             else:

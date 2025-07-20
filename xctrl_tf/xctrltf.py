@@ -57,7 +57,7 @@ def onChannelMasterMute (chan,value):
 
 def buttonPress (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
-    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name:
+    if 'Mute' not in button.name and 'Group' not in button.name and 'Send' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name and 'Drop' not in button.name:
         button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
         if x2tf.fader_offset <=23:
@@ -85,6 +85,17 @@ def buttonPress (button):
         x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)]
         x2tf.t.sendChannelMute(x2tf.xtouchChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
         button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
+        x2tf.updateDisplay()
+    if 'Drop' in button.name and button.pressed==True:
+        self.mute_first_bank = not self.mute_first_bank
+        button.SetLED(self.mute_first_bank)
+        if self.mute_first_bank:
+            val = True
+        else:
+            val = False
+        for i in range(8):
+            x2tf.ch_mutes[i] = val
+            x2tf.t.sendChannelMute(i,x2tf.ch_mutes[i])
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
@@ -212,6 +223,7 @@ class xctrltf:
         self.t.onFXSendEnValueRcv = onFXSendEnValueRcv
         self.t.onChannelMasterMute = onChannelMasterMute
         self.fader_select_en = [False] * 40
+        self.mute_first_bank = False
         self.fx1_sends = [-120] * 40
         self.fx2_sends =  [-120] * 40
         self.fx1_send_en = [False] * 40
@@ -249,7 +261,7 @@ class xctrltf:
             self.t.getFaderIcon(i)
             time.sleep(0.01)
             self.t.getChannelOn(i)
-            time.sleep(0.01)
+            time.sleep(0.02)
             self.t.getFX1Send(i)
             time.sleep(0.01)
             self.t.getFX2Send(i)
@@ -281,7 +293,7 @@ class xctrltf:
                 if fc == c:
                     new_map.append(index)
         '''
-        new_map = [0,1,2,3,4,5,6,25,8,12,13,9,11,10,14,26,16,17,18,19,27,28,30,31,24,29,7,15,20,21,22,23] #custom grouping
+        new_map = [0,1,2,3,4,5,6,7, 8,9,10,11,12,13,14,15, 27,28,30,31,26,24,25,29 16,17,18,19,20,21,22,23] #custom grouping
         self.ch_custom_map = new_map
 
     def xtouchChToTFCh (self, fader_index):
@@ -391,34 +403,21 @@ class xctrltf:
     def periodicDisplayRefresh(self):
         while self.running:
             i = 0
-            if self.connected:
-                
+            if self.connected:      
                 for i in range(8):
                     self.t.getFaderValue(self.xtouchChToTFCh(i))
-  
+                    self.t.getChannelOn(self.xtouchChToTFCh(i))
                     if i % 4 == 0:
                         self.t.getFaderName(self.xtouchChToTFCh(i))
-       
-                        self.t.getFaderColor(self.xtouchChToTFCh(i))
-                       
+                        self.t.getFaderColor(self.xtouchChToTFCh(i))                    
                         i = 1
-                    self.t.getChannelOn(self.xtouchChToTFCh(i))
-                    
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
-                    
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
                 self.t.getMainFaderValue()
-                
                 self.t.getMainFXFaderValue(0)
-                
                 self.t.getMainFXFaderValue(1)
-                
-                
-                if self.pendingDisplayUpdate:
-                   
-                    self.updateDisplay()
-                   
-                    
+                if self.pendingDisplayUpdate: 
+                    self.updateDisplay() 
                     self.pendingDisplayUpdate = False
                 time.sleep(0.5)
 
