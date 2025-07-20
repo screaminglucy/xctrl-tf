@@ -68,6 +68,8 @@ def buttonPress (button):
     if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
+        else:
+            x2tf.fader_offset = 0
             x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
         if x2tf.fader_offset <= 23:
