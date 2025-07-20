@@ -1,7 +1,7 @@
 import XTouch as XTouch
 import tf as tf
 import time
-import keyboard
+#import keyboard
 import logging
 import _thread
 
@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 global x2tf
 METER_HISTORY_LENGTH = 10
+
 
 #callbacks
 def updateTFFader (index,value):
@@ -391,20 +392,33 @@ class xctrltf:
         while self.running:
             i = 0
             if self.connected:
+                
                 for i in range(8):
                     self.t.getFaderValue(self.xtouchChToTFCh(i))
+  
                     if i % 4 == 0:
                         self.t.getFaderName(self.xtouchChToTFCh(i))
+       
                         self.t.getFaderColor(self.xtouchChToTFCh(i))
+                       
                         i = 1
                     self.t.getChannelOn(self.xtouchChToTFCh(i))
+                    
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
+                    
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
                 self.t.getMainFaderValue()
+                
                 self.t.getMainFXFaderValue(0)
+                
                 self.t.getMainFXFaderValue(1)
+                
+                
                 if self.pendingDisplayUpdate:
+                   
                     self.updateDisplay()
+                   
+                    
                     self.pendingDisplayUpdate = False
                 time.sleep(0.5)
 
@@ -500,7 +514,7 @@ class xctrltf:
 running = True
 
 print ("Press q to quit")
-
+'''
 def on_key_event(event):
     global running
     if event.name == 'q' and event.event_type == keyboard.KEY_DOWN:
@@ -508,7 +522,7 @@ def on_key_event(event):
         running = False
 
 keyboard.on_press(on_key_event)
-
+'''
 x2tf = xctrltf()
 firstSync = True
 synced = False

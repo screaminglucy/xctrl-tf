@@ -214,8 +214,13 @@ class tf_rcp:
             cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level '+ str(fx*2)+ ' '+ str(self.mix)+' '+v 
         else:
             cmd = 'set MIXER:Current/FxRtnCh/Fader/Level '+ str(fx*2)+' 0 '+v
+        if self.mix != 0:
+            cmd2 = 'set MIXER:Current/FxRtnCh/ToMix/Level '+ str(fx*2 +1)+ ' '+ str(self.mix)+' '+v 
+        else:
+            cmd2 = 'set MIXER:Current/FxRtnCh/Fader/Level '+ str(fx*2 +1)+' 0 '+v
         if (time.time() - self.last_main_fader_update) > 0.100:
             self.send_command(cmd)
+            self.send_command(cmd2)
             self.last_main_fader_update = time.time() 
 
     def getFX1Send (self, channel):
