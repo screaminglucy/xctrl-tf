@@ -166,15 +166,17 @@ def encoderChange(index, direction):
         chan = x2tf.xtouchChToTFCh(index)
         fx = x2tf.chooseFX(chan)
         if fx == 0:
-            x2tf.fx1_sends[chan] = x2tf.fx1_sends[chan] + (2.5 * direction)
-            if x2tf.fx1_sends[chan] >= 0:
-                x2tf.fx1_sends[chan] = 0
-            x2tf.t.sendFXSend(0,chan,x2tf.fx1_sends[chan])
+            send_value =  x2tf.fx1_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(0,chan,send_value)
+            x2tf.fx1_sends[chan] = send_value
         else:
-            x2tf.fx2_sends[chan] = x2tf.fx2_sends[chan] + (2.5 * direction)
-            if x2tf.fx2_sends[chan] >= 0:
-                x2tf.fx2_sends[chan] = 0
-            x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
+            send_value =  x2tf.fx2_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(1,chan,send_value)
+            x2tf.fx2_sends[chan] = send_value
         x2tf.pendingDisplayUpdate = True
         #update encoder
         if fx == 0:

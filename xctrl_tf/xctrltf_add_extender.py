@@ -194,15 +194,17 @@ def encoderChange(index, direction):
         chan = x2tf.xtouchChToTFCh(index)
         fx = x2tf.chooseFX(chan)
         if fx == 0:
-            x2tf.fx1_sends[chan] = x2tf.fx1_sends[chan] + (2.5 * direction)
-            if x2tf.fx1_sends[chan] >= 0:
-                x2tf.fx1_sends[chan] = 0
-            x2tf.t.sendFXSend(0,chan,x2tf.fx1_sends[chan])
+            send_value =  x2tf.fx1_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(0,chan,send_value)
+            x2tf.fx1_sends[chan] = send_value
         else:
-            x2tf.fx2_sends[chan] = x2tf.fx2_sends[chan] + (2.5 * direction)
-            if x2tf.fx2_sends[chan] >= 0:
-                x2tf.fx2_sends[chan] = 0
-            x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
+            send_value =  x2tf.fx2_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(1,chan,send_value)
+            x2tf.fx2_sends[chan] = send_value
         x2tf.pendingDisplayUpdate = True
         #update encoder
         if fx == 0:
@@ -229,20 +231,22 @@ def encoderChange(index, direction):
                 last_encoder_time = time.time()
 
 def encoderChangeExt(index, direction):
-    logger.info ("encoder change ext"+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchExtChToTFCh(index)
         fx = x2tf.chooseFX(chan)
         if fx == 0:
-            x2tf.fx1_sends[chan] = x2tf.fx1_sends[chan] + (2.5 * direction)
-            if x2tf.fx1_sends[chan] >= 0:
-                x2tf.fx1_sends[chan] = 0
-            x2tf.t.sendFXSend(0,chan,x2tf.fx1_sends[chan])
+            send_value =  x2tf.fx1_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(0,chan,send_value)
+            x2tf.fx1_sends[chan] = send_value
         else:
-            x2tf.fx2_sends[chan] = x2tf.fx2_sends[chan] + (2.5 * direction)
-            if x2tf.fx2_sends[chan] >= 0:
-                x2tf.fx2_sends[chan] = 0
-            x2tf.t.sendFXSend(1,chan,x2tf.fx2_sends[chan])
+            send_value =  x2tf.fx2_sends[chan] + (2.5 * direction)
+            if send_value >= 0:
+                send_value = 0
+            x2tf.t.sendFXSend(1,chan,send_value)
+            x2tf.fx2_sends[chan] = send_value
+        logger.info ("encoder change ext "+str(index)+" "+str(direction)+ " chan:"+str(chan)+ " fx:"+str(fx) +" value:"+str(x2tf.fx1_sends[chan]))
         x2tf.pendingDisplayUpdate = True
         #update encoder
         if fx == 0:
@@ -578,10 +582,11 @@ class xctrltf:
         indexExt = self.tfChToXtouchExtCh(chan)
         db = tf.fader_value_to_db(value)
         v = XTouch.fader_db_to_value(db)
+        vExt = xtouchextender.fader_db_to_value(db)
         if index >= 0 and index < 8:
             self.xtouch.SendSlider(index,v)
         if indexExt >= 0 and indexExt < 8:
-            self.xtouchext.SendSlider(index,v)
+            self.xtouchext.SendSlider(index,vExt)
 
     def updateMainFader (self, value):
         self.main_fader_value = value
@@ -652,6 +657,7 @@ running = True
 
 print ("Press q to quit")
 
+import keyboard
 def on_key_event(event):
     global running
     if event.name == 'q' and event.event_type == keyboard.KEY_DOWN:
