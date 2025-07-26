@@ -70,6 +70,8 @@ class XTouchExt:
 
     def __init__(self, name='X-Touch-Ext'):
         self.name = name
+        self.running = False
+        self._active = False
         self.input_port = None
         self.output_port = None
         self.outbound_q = queue.Queue()
