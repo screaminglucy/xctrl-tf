@@ -11,6 +11,7 @@ import logging
 import math
 import time
 import queue
+import inspect
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -148,6 +149,14 @@ class XTouchExt:
 
     def sendRawMsg(self, msg):
         if self.running:
+            #if msg.type == 'control_change':
+                #if msg.control == 80:
+                    #logger.info (str(msg))
+                    # Get the current frame and then the frame of the caller
+                    #caller_frame = inspect.currentframe().f_back
+                    # Get the code object of the caller's frame and its name
+                    #caller_name = caller_frame.f_code.co_name
+                    #print(f"callee_function was called by: {caller_name}")
             self.outbound_q.put(msg)
         
 
@@ -172,6 +181,7 @@ class XTouchExt:
         #logger.debug('right '+ str(right))
         #logger.debug ('values '+str(values))
         msg = mido.Message('control_change', control=80+index, value=value)
+        logger.debug (str(msg))
         self.sendRawMsg(msg)
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
@@ -223,12 +233,12 @@ class XTouchExt:
                 if self.onSliderChange:
                     self.onSliderChange(int(control-70), int(value))
             elif control >= 80 and control <= 87:
+                direction = -1
+                if value == 65:
+                    direction = 1
                 if self.onEncoderChange:
-                    direction = -1
-                    if value == 65:
-                        direction = 1
                     self.onEncoderChange(int(control-80), direction)
-                logger.info('Encoder: (' + str(int(control-80)) + ', ' + str(int(direction) + ')'))
+                logger.debug('Encoder: (' + str(control-80) + ', ' + str(direction) + ')')
             
 
 
@@ -314,7 +324,7 @@ class XTouchExt:
             enc = enc *127 / 12
             enc = int(enc)
             self.xtouch.SendEncoder(self.index, enc)
-            logger.debug ('value = '+ str(enc))
+            logger.debug ('encoder:'+str(self.index)+'  value = '+ str(enc))
         #
         # Scribble Strip
         #

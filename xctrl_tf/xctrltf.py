@@ -161,7 +161,7 @@ last_encoder_time = time.time()
 
 def encoderChange(index, direction):
     global last_encoder_time
-    logger.info ("encoder change "+str(index)+" "+str(direction))
+    logger.debug ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchChToTFCh(index)
         fx = x2tf.chooseFX(chan)

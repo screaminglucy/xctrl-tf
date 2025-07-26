@@ -586,7 +586,7 @@ class xctrltf:
         if index >= 0 and index < 8:
             self.xtouch.SendSlider(index,v)
         if indexExt >= 0 and indexExt < 8:
-            self.xtouchext.SendSlider(index,vExt)
+            self.xtouchext.SendSlider(indexExt,vExt)
 
     def updateMainFader (self, value):
         self.main_fader_value = value
