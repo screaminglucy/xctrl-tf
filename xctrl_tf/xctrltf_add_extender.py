@@ -262,7 +262,7 @@ class xctrltf:
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.xtouchext = xtouchextender.XTouchExt()
         self.connected = False
-        self.wait_for_connect(skipXTouch=False)
+        self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
         self.xtouch.setOnSliderChange(updateTFFader)
@@ -289,6 +289,7 @@ class xctrltf:
         self.fx2_send_en = [False] * 40
         self.chan_encoder_group_adjustment = 0
         self.fader_offset = 0
+        self.ext_fader_offset = 8 #next 8 ch
         self.global_fx_on = True
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
@@ -354,7 +355,7 @@ class xctrltf:
                 if fc == c:
                     new_map.append(index)
         '''
-        new_map = [0,1,2,3,4,5,6,7, 8,9,10,11,12,13,14,15, 27,28,30,31,26,24,25,29, 16,17,18,19,20,21,22,23] #custom grouping
+        new_map = [0,1,2,3,4,5,6,7, 8,9,10,11,12,13,14,15, 24,25,26,27,28,29,30,31, 16,17,18,19,20,21,22,23] #custom grouping
         self.ch_custom_map = new_map
 
     def xtouchChToTFCh (self, fader_index):
@@ -365,15 +366,21 @@ class xctrltf:
 
     def xtouchExtChToTFCh (self, fader_index):
         if self.map_by_color_en == False:
-            return self.fader_offset + fader_index + 8
+            return self.fader_offset + fader_index + self.ext_fader_offset
         else:
-            return self.ch_custom_map[self.fader_offset + fader_index + 8]
+            return self.ch_custom_map[self.fader_offset + fader_index + self.ext_fader_offset]
     
     def tfChToXtouchCh (self, chan_index):
         if self.map_by_color_en == False:
             return chan_index - self.fader_offset
         else:
             return self.ch_custom_map.index(chan_index) - self.fader_offset
+
+    def tfChToXtouchExtCh (self, chan_index):
+        if self.map_by_color_en == False:
+            return chan_index - self.fader_offset - self.ext_fader_offset
+        else:
+            return self.ch_custom_map.index(chan_index) - self.fader_offset - self.ext_fader_offset
     
     def dbToEncoder (self, db):
         if db >= 0:
@@ -568,10 +575,13 @@ class xctrltf:
     def updateFader (self, chan,value):
         self.fader_values[chan] = value
         index = self.tfChToXtouchCh(chan)
+        indexExt = self.tfChToXtouchExtCh(chan)
         db = tf.fader_value_to_db(value)
         v = XTouch.fader_db_to_value(db)
         if index >= 0 and index < 8:
             self.xtouch.SendSlider(index,v)
+        if indexExt >= 0 and indexExt < 8:
+            self.xtouchext.SendSlider(index,v)
 
     def updateMainFader (self, value):
         self.main_fader_value = value
@@ -600,7 +610,6 @@ class xctrltf:
         self.fader_icons[chan] = icon
 
     def updateFaderColor(self,chan,value):
-        index = self.tfChToXtouchCh(chan)
         try:
             color = XTouch.XTouch.Channel.Color[value].value
         except:
@@ -634,13 +643,15 @@ class xctrltf:
     def stop_running (self):
         self.xtouch.running = False
         self.t.running = False
+        self.xtouchext.running = False
         self.running = False
+
     
 
 running = True
 
 print ("Press q to quit")
-'''
+
 def on_key_event(event):
     global running
     if event.name == 'q' and event.event_type == keyboard.KEY_DOWN:
@@ -648,7 +659,7 @@ def on_key_event(event):
         running = False
 
 keyboard.on_press(on_key_event)
-'''
+
 x2tf = xctrltf()
 firstSync = True
 synced = False

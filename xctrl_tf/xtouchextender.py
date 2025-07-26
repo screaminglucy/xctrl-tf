@@ -143,12 +143,13 @@ class XTouchExt:
                 time.sleep(0.001)
             except :
                 pass
-            
+        self.output_port.close()
+        self.input_port.close()    
 
     def sendRawMsg(self, msg):
         if self.running:
             self.outbound_q.put(msg)
-
+        
 
     def SendAll(self):
         for c in self.channels:
