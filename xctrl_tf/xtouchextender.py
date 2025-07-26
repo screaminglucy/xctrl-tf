@@ -107,7 +107,8 @@ class XTouchExt:
 
     def connect(self):
         logger.info ("Connect")
-        port_name = self.name
+        in_port_name = self.name
+        out_port_name = self.name
         try:
             ins = mido.get_input_names()
             outs = mido.get_output_names()
@@ -125,6 +126,7 @@ class XTouchExt:
             logger.info("Midi connection opened")
         except OSError as e:
             logger.error(f"Error opening MIDI port: {e}")
+            self.running = False
 
     def getMsg(self):
         while self.running:
