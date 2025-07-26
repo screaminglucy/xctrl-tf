@@ -21,6 +21,7 @@ def fader_value_to_db (value):
     if (value == 0):
         db = -120
     else:
+        value = int((value * 32767)/127)
         db = 20*math.log10(value / 24575) *3.5
         if value > 24575:
             db = (value - 24575) / 800
@@ -37,7 +38,9 @@ def fader_db_to_value (db):
     if value < 0:
         value = 0
     value = int (value)
-    logger.debug ("tovalue: fader value = "+str(value)+ " db value = "+str(db))
+    value = (value * 127) / 32767
+    value = int (value)
+    logger.debug ("tovalue: fader value = "+str(value)+ ", db value = "+str(db))
     return value
 
 def db_to_meter_value(db):
@@ -105,13 +108,12 @@ class XTouchExt:
         try:
             self.output_port = mido.open_output(port_name+ " 1")
             self.input_port = mido.open_input(port_name + " 0")
+            self.running = True
+            _thread.start_new_thread(self.getMsg, ())
+            _thread.start_new_thread(self.processOutgoingPackets, ())
+            logger.info("Midi connection opened")
         except OSError as e:
             logger.error(f"Error opening MIDI port: {e}")
-        self.running = True
-        _thread.start_new_thread(self.getMsg, ())
-        _thread.start_new_thread(self.processOutgoingPackets, ())
-        logger.info("Midi connection opened")
-        self.SendKeepAlive()
 
     def getMsg(self):
         while self.running:
@@ -128,15 +130,15 @@ class XTouchExt:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.output_port.send(msg)
+                time.sleep(0.001)
             except :
                 pass
             
 
     def sendRawMsg(self, msg):
-        self.outbound_q.put(msg)
+        if self.running:
+            self.outbound_q.put(msg)
 
-    def sendMidiControl(self, index, value):
-        self.sendRawMsg(bytearray([0xF0, 0xD0, index, value, 0xF7]))
 
     def SendAll(self):
         for c in self.channels:
@@ -145,34 +147,38 @@ class XTouchExt:
             self.SendButton(b)
 
     def SendButton(self, index, value):
-        self.sendRawMsg(bytearray([0xF0, 0x90, 0x00 + index, value, 0xF7]))
+        msg = mido.Message ('note_on', note=index, velocity = value )
+        self.sendRawMsg(msg)
 
     def SendSlider(self, index, value):
-        self.sendRawMsg(bytearray([0xF0, 0xE0 + index] + list(value.to_bytes(2, sys.byteorder)) +  [0xF7]))
+        msg = mido.Message('control_change', control=70+index, value=value)
+        self.sendRawMsg(msg)
 
-    def SendEncoder(self, index, values):
-        left = ''.join(['1' if v else '0' for v in values][:7])
-        right = ''.join(['1' if v else '0' for v in values][7:])
-        logger.debug('left '+ str(left))
-        logger.debug('right '+ str(right))
-        logger.debug ('values '+str(values))
-        self.sendRawMsg(bytearray([0xF0, 0xB0, 48 + index, int(left, 2), 0xF7]))
-        self.sendRawMsg(bytearray([0xF0, 0xB0, 56 + index, int(right, 2), 0xF7]))
+    def SendEncoder(self, index, value):
+        #left = ''.join(['1' if v else '0' for v in values][:7])
+        #right = ''.join(['1' if v else '0' for v in values][7:])
+        #logger.debug('left '+ str(left))
+        #logger.debug('right '+ str(right))
+        #logger.debug ('values '+str(values))
+        msg = mido.Message('control_change', control=80+index, value=value)
+        self.sendRawMsg(msg)
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
         logger.debug ("send scribble " +topText +" " + bottomText)
-        self.sendRawMsg(bytearray([0xF0, 0x00, 0x00, 0x66, 0x58, 0x20 + index, (0x00 if not bottomInverted else 0x40) + color]
-            + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) + [0xF7]))
+        msg = mido.Message('sysex', data=([0x00, 0x20, 0x32, 0x15, 0x4c, index, (0x00 if not bottomInverted else 0x40) + color] + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8'))))
+        self.sendRawMsg(msg)
 
     def SendMeter(self, index, level):
         self.meter_levels[index] = level
         logger.debug (self.meter_levels)
-        self.SendMeters()
-        #self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, index + level, 0xF7]))
+        #self.SendMeters()
+        msg = mido.Message('control_change', control=90+index, value=level)
+        self.sendRawMsg(msg)
 
-    def SendMeters(self):
-        self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, 0 + self.channels[0].GetMeterLevel(), 16 + self.channels[1].GetMeterLevel(), 32 + self.channels[2].GetMeterLevel() , 48 + self.channels[3].GetMeterLevel(), 64 + self.channels[4].GetMeterLevel(), \
-        80 + self.channels[5].GetMeterLevel(), 96 + self.channels[6].GetMeterLevel(), 112 + self.channels[7].GetMeterLevel(),0xF7]))
+    #def SendMeters(self):
+    #    msg = mido.Message('control_change', control=90+index, value=value)
+    #    self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, 0 + self.channels[0].GetMeterLevel(), 16 + self.channels[1].GetMeterLevel(), 32 + self.channels[2].GetMeterLevel() , 48 + self.channels[3].GetMeterLevel(), 64 + self.channels[4].GetMeterLevel(), \
+    #    80 + self.channels[5].GetMeterLevel(), 96 + self.channels[6].GetMeterLevel(), 112 + self.channels[7].GetMeterLevel(),0xF7]))
   
     def SetMeterLevel(self, channel, level):
         self.channels[channel].SetMeterLevel(level)
@@ -180,19 +186,6 @@ class XTouchExt:
     def SetMeterLevelPeak(self, channel, level):
         self.channels[channel].SetMeterLevelPeak(level)
     
-    def SendKeepAlive(self):
-        if self.running:
-            time.sleep(1)
-            '''
-            self.sendRawMsg([0xF0, 0x00, 0x00, 0x66, 0x14, 0x00, 0xF7])
-            threading.Timer(6, self.SendKeepAlive).start()
-            if self.lastMsgTime is not None:
-                if (time.time() - self.lastMsgTime) > timeout:
-                    logger.info(f"Dropped connection from {self.ip}")
-                    self.ip = None
-                    self._active = False
-                    '''
-
     def HandleMsg(self, data):
         self.lastMsg = datetime.now()
         msg_type = data.type
@@ -200,11 +193,11 @@ class XTouchExt:
         if msg_type == 'note_on':
             note = data.note
             velocity = data.velocity
-            logger.info ("note "+str(note) + " velocity "+str(velocity))
+            logger.debug ("note "+str(note) + " velocity "+str(velocity))
         if msg_type == 'control_change':
             control = data.control
             value = data.value
-            logger.info ("control " + str(control) + " value "+ str(value))
+            logger.debug ("control " + str(control) + " value "+ str(value))
         data = data.bin()
         logger.debug ("Received: "+str(data))
         if msg_type == 'note_on':
@@ -217,7 +210,7 @@ class XTouchExt:
             if control >= 70 and control <= 77:
                 logger.debug('Fader: (' + str(control) + ', ' + str(value) + ')')
                 if self.onSliderChange:
-                    self.onSliderChange(int(control), int(value))
+                    self.onSliderChange(int(control-70), int(value))
             elif control >= 80 and control <= 87:
                 if self.onEncoderChange:
                     direction = -1
@@ -300,14 +293,17 @@ class XTouchExt:
         def SendEncoder(self):
             enc = self.encoderValue
             logger.debug (' encoderValue ' + str(self.encoderValue))
-            if self.encoderFromCenter:
-                values = [enc>=0, enc >= -1, enc >= -2, enc >= -3, enc >= -4, enc >= -5, enc >= -6, enc >= 6, enc >= 5, enc >= 4, enc >= 3, enc >= 2, enc >= 1]
-            elif self.encoderBetween:
-                values = [enc <= -5.25, enc >= -5.75 and enc <= -4.25, enc >= -4.75 and enc <= -3.25, enc >= -3.75 and enc <= -2.25, enc >= -2.75 and enc <= -1.25, enc >= -1.75 and enc <= -0.25, enc >= -0.75 and enc <= 0.75, enc >= 0.25 and enc <= 1.75, enc >= 1.25 and enc <= 2.75, enc >= 2.25 and enc <= 3.75, enc >= 3.25 and enc <= 4.75, enc >= 4.25 and enc <= 5.75, enc >= 5.25]
-            else:
-                values =  [enc < -5.5, enc >= -5.5 and enc < -4.5, enc >= -4.5 and enc < -3.5, enc >= -3.5 and enc < -2.5, enc >= -2.5 and enc < -1.5, enc >= -1.5 and enc < -0.5, enc >= -0.5 and enc < 0.5, enc >= 0.5 and enc < 1.5, enc >= 1.5 and enc < 2.5, enc >= 2.5 and enc < 3.5, enc >= 3.5 and enc < 4.5, enc >= 4.5 and enc < 5.5, enc >= 5.5]
-            self.xtouch.SendEncoder(self.index, values)
-            logger.debug ('values = '+ str(values))
+            #if self.encoderFromCenter:
+            #    values = [enc>=0, enc >= -1, enc >= -2, enc >= -3, enc >= -4, enc >= -5, enc >= -6, enc >= 6, enc >= 5, enc >= 4, enc >= 3, enc >= 2, enc >= 1]
+            #elif self.encoderBetween:
+            #    values = [enc <= -5.25, enc >= -5.75 and enc <= -4.25, enc >= -4.75 and enc <= -3.25, enc >= -3.75 and enc <= -2.25, enc >= -2.75 and enc <= -1.25, enc >= -1.75 and enc <= -0.25, enc >= -0.75 and enc <= 0.75, enc >= 0.25 and enc <= 1.75, enc >= 1.25 and enc <= 2.75, enc >= 2.25 and enc <= 3.75, enc >= 3.25 and enc <= 4.75, enc >= 4.25 and enc <= 5.75, enc >= 5.25]
+            #else:
+            #    values =  [enc < -5.5, enc >= -5.5 and enc < -4.5, enc >= -4.5 and enc < -3.5, enc >= -3.5 and enc < -2.5, enc >= -2.5 and enc < -1.5, enc >= -1.5 and enc < -0.5, enc >= -0.5 and enc < 0.5, enc >= 0.5 and enc < 1.5, enc >= 1.5 and enc < 2.5, enc >= 2.5 and enc < 3.5, enc >= 3.5 and enc < 4.5, enc >= 4.5 and enc < 5.5, enc >= 5.5]
+            enc = enc + 6 #make positive
+            enc = enc *127 / 12
+            enc = int(enc)
+            self.xtouch.SendEncoder(self.index, enc)
+            logger.debug ('value = '+ str(enc))
         #
         # Scribble Strip
         #
@@ -428,7 +424,7 @@ class XTouchExt:
 
         class LEDState(Enum):
             Off = 0
-            Blinking = 1
+            Blinking = 64
             On = 127
 
         class Button():
@@ -519,8 +515,3 @@ def SetAllSliders(index, value):
             xtouch.SendScribble(i, '', '', 7, False)
 
 
-
-
-ext = XTouchExt()
-while True:
-    time.sleep(1)
