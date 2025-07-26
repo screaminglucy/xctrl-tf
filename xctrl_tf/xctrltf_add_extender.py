@@ -138,6 +138,11 @@ def buttonPress (button):
        x2tf.main_fader_rev = not x2tf.main_fader_rev
        button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
+    if 'Touch' in button.name:
+        ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
+        x2tf.xtouch_fader_in_use[ch] = button.pressed
+
+       
 
 def buttonPressExt (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
@@ -154,7 +159,9 @@ def buttonPressExt (button):
         x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] 
         button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
         x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
-    
+    if 'Touch' in button.name:
+        ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
+        x2tf.xtouchext_fader_in_use[ch] = button.pressed
 
 def onGlobalMuteRcv (value):
     x2tf.global_fx_on = not value
@@ -285,6 +292,8 @@ class xctrltf:
         self.global_fx_on = True
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
+        self.xtouch_fader_in_use = [False]*9
+        self.xtouchext_fader_in_use = [False]*8
         self.fader_icons = ['none']*40
         self.fader_values = [1000]*40
         self.main_fader_value = 0
@@ -508,10 +517,12 @@ class xctrltf:
             k = 0
             if self.connected:      
                 loop_start_time = time.time()
+                while (self.t.isQueueEmpty() == False):
+                    time.sleep(0.1)
                 for i in range(8):
-                    channel_start_time = time.time()
                     if self.xtouch._active:
-                        self.t.getFaderValue(self.xtouchChToTFCh(i))
+                        if self.xtouch_fader_in_use[i] == False:
+                            self.t.getFaderValue(self.xtouchChToTFCh(i))
                         self.t.getChannelOn(self.xtouchChToTFCh(i))
                         if k % 6 == 0:
                             self.t.getFaderName(self.xtouchChToTFCh(i))
@@ -520,11 +531,12 @@ class xctrltf:
                         self.t.getFX1Send(self.xtouchChToTFCh(i))
                         self.t.getFX2Send(self.xtouchChToTFCh(i))
                     if self.xtouchext.running:
-                        self.t.getFaderValue(self.xtouchExtChToTFCh(i))
+                        if self.xtouchext_fader_in_use[i] == False:
+                            self.t.getFaderValue(self.xtouchExtChToTFCh(i))
                         self.t.getChannelOn(self.xtouchExtChToTFCh(i))
                         self.t.getFX1Send(self.xtouchExtChToTFCh(i))
                         self.t.getFX2Send(self.xtouchExtChToTFCh(i))
-                    while ((time.time() - channel_start_time) < 0.1):
+                    while (self.t.isQueueEmpty() == False):
                         time.sleep(0.1)
                 self.t.getMainFaderValue()
                 self.t.getMainFXFaderValue(0)

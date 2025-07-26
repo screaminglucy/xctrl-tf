@@ -130,6 +130,9 @@ def buttonPress (button):
        x2tf.main_fader_rev = not x2tf.main_fader_rev
        button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
+    if 'Touch' in button.name:
+        ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
+        x2tf.xtouch_fader_in_use[ch] = button.pressed
     
 
 def onGlobalMuteRcv (value):
@@ -240,6 +243,8 @@ class xctrltf:
         self.main_fader_value = 0
         self.main_fader_rev = False
         self.main_rev_fader_value = [0] * 2
+        self.xtouch_fader_in_use = [False]*9
+        self.xtouchext_fader_in_use = [False]*8
         self.ch_mutes = [False]*40
         self.ch_master_mutes = [False] * 40
         self.ch_custom_map = list(range(40)) 
@@ -406,8 +411,11 @@ class xctrltf:
         while self.running:
             i = 0
             if self.connected:      
+                while (self.t.isQueueEmpty() == False):
+                    time.sleep(0.1)
                 for i in range(8):
-                    self.t.getFaderValue(self.xtouchChToTFCh(i))
+                    if self.xtouch_fader_in_use[i] == False:
+                        self.t.getFaderValue(self.xtouchChToTFCh(i))
                     self.t.getChannelOn(self.xtouchChToTFCh(i))
                     if i % 4 == 0:
                         self.t.getFaderName(self.xtouchChToTFCh(i))
@@ -415,9 +423,10 @@ class xctrltf:
                         i = 1
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
-                self.t.getMainFaderValue()
-                self.t.getMainFXFaderValue(0)
-                self.t.getMainFXFaderValue(1)
+                if self.xtouch_fader_in_use[8] == False:    
+                    self.t.getMainFaderValue()
+                    self.t.getMainFXFaderValue(0)
+                    self.t.getMainFXFaderValue(1)
                 if self.pendingDisplayUpdate: 
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False

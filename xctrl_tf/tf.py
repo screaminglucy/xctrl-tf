@@ -442,6 +442,10 @@ class tf_rcp:
                 time.sleep(0.001)
             except :
                 pass
+ 
+    def isQueueEmpty (self):
+        e=self.outbound_q.empty()
+        return e
 
     def putInOutBoundQueue(self, command):
         self.outbound_q.put(command)    
