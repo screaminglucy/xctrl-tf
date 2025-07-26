@@ -189,7 +189,7 @@ last_encoder_time = time.time()
 
 def encoderChange(index, direction):
     global last_encoder_time
-    logger.info ("encoder change "+str(index)+" "+str(direction))
+    logger.debug ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
         chan = x2tf.xtouchChToTFCh(index)
         fx = x2tf.chooseFX(chan)
@@ -266,7 +266,7 @@ class xctrltf:
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.xtouchext = xtouchextender.XTouchExt()
         self.connected = False
-        self.wait_for_connect(skipXTouch=True)
+        self.wait_for_connect(skipXTouch=False)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
         self.xtouch.setOnSliderChange(updateTFFader)
@@ -656,7 +656,7 @@ class xctrltf:
 running = True
 
 print ("Press q to quit")
-
+'''
 import keyboard
 def on_key_event(event):
     global running
@@ -665,7 +665,7 @@ def on_key_event(event):
         running = False
 
 keyboard.on_press(on_key_event)
-
+'''
 x2tf = xctrltf()
 firstSync = True
 synced = False
