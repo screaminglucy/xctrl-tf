@@ -540,6 +540,7 @@ while running:
             firstSync = False
             x2tf.pendingDisplayUpdate = True
             synced = True
+            logger.info ("Finished syncing")
         else:
             if synced == False:
                 time.sleep(2)

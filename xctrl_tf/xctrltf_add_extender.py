@@ -521,13 +521,9 @@ class xctrltf:
                         self.t.getFX2Send(self.xtouchChToTFCh(i))
                     if self.xtouchext.running:
                         self.t.getFaderValue(self.xtouchExtChToTFCh(i))
-                        time.sleep(0.020)
                         self.t.getChannelOn(self.xtouchExtChToTFCh(i))
-                        time.sleep(0.020)
                         self.t.getFX1Send(self.xtouchExtChToTFCh(i))
-                        time.sleep(0.020)
                         self.t.getFX2Send(self.xtouchExtChToTFCh(i))
-                        time.sleep(0.020)
                     while ((time.time() - channel_start_time) < 0.1):
                         time.sleep(0.1)
                 self.t.getMainFaderValue()
@@ -537,8 +533,7 @@ class xctrltf:
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False
                 k = k + 1
-                time.sleep(0.5)
-                while ((time.time() - loop_start_time) < 2):
+                while ((time.time() - loop_start_time) < 1):
                     time.sleep(0.5)
 
     def wait_for_connect (self, skipXTouch=False):
