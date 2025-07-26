@@ -108,8 +108,16 @@ class XTouchExt:
         logger.info ("Connect")
         port_name = self.name
         try:
-            self.output_port = mido.open_output(port_name+ " 1")
-            self.input_port = mido.open_input(port_name + " 0")
+            ins = mido.get_input_names()
+            outs = mido.get_output_names()
+            for i in ins:
+                if self.name in i:
+                    in_port_name = i
+            for o in outs:
+                if self.name in o:
+                    out_port_name = o
+            self.output_port = mido.open_output(out_port_name)
+            self.input_port = mido.open_input(in_port_name)
             self.running = True
             _thread.start_new_thread(self.getMsg, ())
             _thread.start_new_thread(self.processOutgoingPackets, ())
