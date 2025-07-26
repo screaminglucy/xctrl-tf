@@ -319,7 +319,7 @@ class tf_rcp:
             self.send_command(cmd)
             if cmd2 is not None:
                 self.send_command(cmd2)
-                logger.info ("sending fader update " + cmd +' ' + cmd2)
+                logger.debug ("sending fader update " + cmd +' ' + cmd2)
             self.last_fader_updates[chan] = time.time() 
             
     def HandleMsg (self):
