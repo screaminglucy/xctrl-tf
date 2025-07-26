@@ -189,7 +189,7 @@ class XTouchExt:
     def HandleMsg(self, data):
         self.lastMsg = datetime.now()
         msg_type = data.type
-        logger.info ("message type: "+str(msg_type))
+        logger.debug ("message type: "+str(msg_type))
         if msg_type == 'note_on':
             note = data.note
             velocity = data.velocity
