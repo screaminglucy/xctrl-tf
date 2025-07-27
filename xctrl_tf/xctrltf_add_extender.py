@@ -268,7 +268,7 @@ class xctrltf:
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.xtouchext = xtouchextender.XTouchExt()
         self.connected = False
-        self.wait_for_connect(skipXTouch=False)
+        self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
         self.xtouch.setOnSliderChange(updateTFFader)
@@ -589,7 +589,7 @@ class xctrltf:
             if self.xtouch_fader_in_use[index] == False:
                 self.xtouch.SendSlider(index,v)
         if indexExt >= 0 and indexExt < 8:
-            if self.xtouchext_fader_in_use[index] == False:
+            if self.xtouchext_fader_in_use[indexExt] == False:
                 self.xtouchext.SendSlider(indexExt,vExt)
 
     def updateMainFader (self, value):
@@ -609,7 +609,7 @@ class xctrltf:
             v = XTouch.fader_db_to_value(db)
             if self.xtouch_fader_in_use[index] == False:
                 self.xtouch.SendSlider(index,v)
-                
+
     def updateFaderName(self,chan,value):
         if value == "" or value is None:
             value = str(chan)
