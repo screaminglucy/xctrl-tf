@@ -92,6 +92,7 @@ class tf_rcp:
     def __init__(self, ip=None):
         self.mix = 9 #aux9
         self.mixStereo = True
+        self.solo_mix = 11
         ip_detected = detect_yamaha()
         if ip_detected is None:
             self.host = ip
@@ -111,6 +112,7 @@ class tf_rcp:
         self.onFaderColorRcv = None
         self.onFaderValueRcv = None
         self.onChannelMute = None
+        self.onChannelSolo = None
         self.onGlobalMuteRcv = None
         self.onMainFaderValueRcv = None
         self.onMainFXFaderValueRcv = None
@@ -293,6 +295,26 @@ class tf_rcp:
             cmd += '1'
         self.send_command(cmd)
 
+    def sendChannelSolo(self,channel,value):
+        #enable channel on solo aux mix
+        cmd = 'set MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.solo_mix)+' '
+        if value == True:
+            cmd += '1'
+        else:
+            cmd += '0'
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(channel)+' '+str(self.solo_mix)+' 0'
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/Mix/Fader/Level '+ str(self.solo_mix)+' 0 0' 
+        self.send_command(cmd)
+
+    def getChannelSoloOn(self,channel):
+        cmd = 'get MIXER:Current/InCh/Fader/On ' + str(channel)+' 0 1' 
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.solo_mix)+' 1'
+        self.send_command(cmd)
+        logger.debug ('getChannelSoloOn sent '+cmd)
+
     def sendMainFaderValue (self, db):
         v = fader_db_to_value(db) 
         if self.mix != 0:
@@ -412,6 +434,8 @@ class tf_rcp:
                                     value = True
                                 if self.onChannelMute and (( self.mix == mix or (self.mix-1 == mix and self.mixStereo)) ):
                                     self.onChannelMute(chan,value)
+                                if self.onChannelSolo and ( self.solo_mix == mix ):
+                                    self.onChannelSolo(chan,value)
                             elif (messageString.startswith('OK get MIXER:Current/InCh/Fader/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/Fader/On')):
                                 chan = int(messageString.split(' ')[3])
                                 value = int(messageString.split(' ')[5])
