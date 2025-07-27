@@ -131,8 +131,11 @@ def buttonPress (button):
        button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
     if 'Touch' in button.name:
-        ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
-        x2tf.xtouch_fader_in_use[ch] = button.pressed
+        if button.name != "MainTouch":
+            ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
+            x2tf.xtouch_fader_in_use[ch] = button.pressed
+        else:
+            x2tf.xtouch_fader_in_use[8] = button.pressed
     
 
 def onGlobalMuteRcv (value):
@@ -206,7 +209,7 @@ def encoderChange(index, direction):
 
 class xctrltf:
 
-    def __init__(self, xtouch_ip='192.168.10.9', tf_ip='192.168.10.5'):
+    def __init__(self, xtouch_ip='192.168.10.80', tf_ip='192.168.10.10'):
         self.map_by_color_en = False
         self.fx_select = 0
         self.pendingDisplayUpdate = True
@@ -457,7 +460,8 @@ class xctrltf:
         db = tf.fader_value_to_db(value)
         v = XTouch.fader_db_to_value(db)
         if index >= 0 and index < 8:
-            self.xtouch.SendSlider(index,v)
+            if self.xtouch_fader_in_use[index] == False:
+                self.xtouch.SendSlider(index,v)
 
     def updateMainFader (self, value):
         self.main_fader_value = value
@@ -465,7 +469,8 @@ class xctrltf:
             index = 8
             db = tf.fader_value_to_db(value)
             v = XTouch.fader_db_to_value(db)
-            self.xtouch.SendSlider(index,v)
+            if self.xtouch_fader_in_use[index] == False:
+                self.xtouch.SendSlider(index,v)
 
     def updateMainFXFader (self, fx, value):
         self.main_rev_fader_value[fx] = value
@@ -473,7 +478,8 @@ class xctrltf:
         if self.main_fader_rev and self.fx_select == fx:
             db = tf.fader_value_to_db(value)
             v = XTouch.fader_db_to_value(db)
-            self.xtouch.SendSlider(index,v)
+            if self.xtouch_fader_in_use[index] == False:
+                self.xtouch.SendSlider(index,v)
 
     def updateFaderName(self,chan,value):
         if value == "" or value is None:

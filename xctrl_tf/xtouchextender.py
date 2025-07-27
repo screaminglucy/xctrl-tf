@@ -16,13 +16,13 @@ import inspect
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-
+#USB MCU mode (mackie control)
 
 def fader_value_to_db (value):
-    if (value == 0):
+    if (value == -8192):
         db = -120
     else:
-        value = int((value * 32767)/127)
+        value = int((value + 8192)*2)
         db = 20*math.log10(value / 24575) *3.5
         if value > 24575:
             db = (value - 24575) / 800
@@ -39,7 +39,7 @@ def fader_db_to_value (db):
     if value < 0:
         value = 0
     value = int (value)
-    value = (value * 127) / 32767
+    value = ( value / 2 ) - 8192
     value = int (value)
     logger.debug ("tovalue: fader value = "+str(value)+ ", db value = "+str(db))
     return value
@@ -173,7 +173,7 @@ class XTouchExt:
         self.sendRawMsg(msg)
 
     def SendSlider(self, index, value):
-        msg = mido.Message('control_change', control=70+index, value=value)
+        msg = mido.Message('pitchwheel', channel=index, pitch=value)
         self.sendRawMsg(msg)
 
     def SendEncoder(self, index, value):
@@ -182,20 +182,72 @@ class XTouchExt:
         #logger.debug('left '+ str(left))
         #logger.debug('right '+ str(right))
         #logger.debug ('values '+str(values))
-        msg = mido.Message('control_change', control=80+index, value=value)
+        # input is 0 to +12
+        value = value - 1
+        if value < 0:
+            value = 0
+        value = 0x20 | value
+        msg = mido.Message('control_change', control=48+index, value=value)
         logger.debug (str(msg))
         self.sendRawMsg(msg)
 
+
+    '''
+    The colors of the entire unit LCD are set with a single Sysex message. The message is as follows:
+
+    Extender (all scribbles red):
+    F0 00 00 66 15 72 01 01 01 01 01 01 01 01 F7
+
+    All Sysex messages begin with F0 and end with F7, those are not special. The first 5 bytes after the F0 (00 00 66 14 72) are required. The next 8 bytes are what set the colors of each scribble (in order from left to right), followed by F7. The colors are mapped as follows:
+
+    00 - Blank
+    01 - Red
+    02 - Green
+    03 - Yellow
+    04 - Blue
+    05 - Purple
+    06 - Cyan
+    07 - White
+
+    Displaying Data on LCD
+    DAW -> controller
+
+    Every LCD message start with the header followed by the 0x12 byte.
+    Then the next byte tells the position to display the text.
+    We get the actual text (mostly 6 chars)
+    Finally, the SysEx ends with a 0xF7 byte
+    Example:
+
+    F0 00 00 66 00 12 38 ***4C 35 30 52 35 30 20*** FC
+    <hdr>         |   _position                     _end of SysEx
+            LCD message
+    Position of the text on the LCD
+    On a Mackie Control, the LCD screen has 2x56 characters, divided by 8 (8 channels on a BCF2000) equals 7 chars by channel.
+
+    Each position on the screen is identified by an offset:
+
+    From 00 to 37 (56 values) for the first line,
+    From 38 to 6F (56 values) for the second line
+    '''
+
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
+        self.channels[index].scribbleColor = color 
+        colors = []
+        for i in range(8):
+            colors.append(int(self.channels[i].scribbleColor))
         logger.debug ("send scribble " +topText +" " + bottomText)
-        msg = mido.Message('sysex', data=([0x00, 0x20, 0x32, 0x15, 0x4c, index, (0x00 if not bottomInverted else 0x40) + color] + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8'))))
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x12, 0x00 + (index*7)] + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) ))
+        self.sendRawMsg(msg)
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x12, 0x38 + (index*7)] + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) ))
+        self.sendRawMsg(msg)
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x72] + list(colors)))
         self.sendRawMsg(msg)
 
     def SendMeter(self, index, level):
         self.meter_levels[index] = level
         logger.debug (self.meter_levels)
         #self.SendMeters()
-        msg = mido.Message('control_change', control=90+index, value=level)
+        msg = mido.Message('aftertouch',value=(index<<8)|level)
         self.sendRawMsg(msg)
 
     #def SendMeters(self):
@@ -221,26 +273,30 @@ class XTouchExt:
             control = data.control
             value = data.value
             logger.debug ("control " + str(control) + " value "+ str(value))
+        if msg_type == 'pitchwheel':
+            channel = data.channel
+            value = data.pitch
         data = data.bin()
         logger.debug ("Received: "+str(data))
         if msg_type == 'note_on':
-            if note >= 110 and note <= 117:
-                note = note - 110 + 40
+            if note >= 104 and note <= 112:
+                note = note - 104 + 40
             self.buttons.buttons[note].pressed = int(velocity) == 127
             if self.onButtonChange:
                 self.onButtonChange(self.buttons.buttons[note])
         elif msg_type == 'control_change':
-            if control >= 70 and control <= 77:
-                logger.debug('Fader: (' + str(control) + ', ' + str(value) + ')')
-                if self.onSliderChange:
-                    self.onSliderChange(int(control-70), int(value))
-            elif control >= 80 and control <= 87:
-                direction = -1
-                if value == 65:
-                    direction = 1
+            if control >= 16 and control <= 23:
+                direction = 1
+                if value >= 65:
+                    direction = -1
+                control = control - 16
                 if self.onEncoderChange:
-                    self.onEncoderChange(int(control-80), direction)
-                logger.debug('Encoder: (' + str(control-80) + ', ' + str(direction) + ')')
+                    self.onEncoderChange(int(control), direction)
+                logger.info('Encoder: (' + str(control) + ', ' + str(direction) + ')')
+        elif msg_type == 'pitchwheel':
+            logger.debug('Fader: (' + str(channel) + ', ' + str(value) + ')')
+            if self.onSliderChange:
+                self.onSliderChange(channel, int(value))
             
 
 
@@ -266,7 +322,7 @@ class XTouchExt:
             # Scribble variables
             self.scribbleTopText = ''
             self.scribbleBottomText = ''
-            self.scribbleColor = self.Color.White
+            self.scribbleColor = self.Color.White.value
             self.bottomInverted = False
 
             # Slider value
@@ -323,9 +379,7 @@ class XTouchExt:
             #else:
             #    values =  [enc < -5.5, enc >= -5.5 and enc < -4.5, enc >= -4.5 and enc < -3.5, enc >= -3.5 and enc < -2.5, enc >= -2.5 and enc < -1.5, enc >= -1.5 and enc < -0.5, enc >= -0.5 and enc < 0.5, enc >= 0.5 and enc < 1.5, enc >= 1.5 and enc < 2.5, enc >= 2.5 and enc < 3.5, enc >= 3.5 and enc < 4.5, enc >= 4.5 and enc < 5.5, enc >= 5.5]
             enc = enc + 6 #make positive
-            enc = enc *127 / 12
-            enc = int(enc)
-            self.xtouch.SendEncoder(self.index, enc)
+            self.xtouch.SendEncoder(self.index, int(enc))
             logger.debug ('encoder:'+str(self.index)+'  value = '+ str(enc))
         #
         # Scribble Strip
@@ -389,15 +443,6 @@ class XTouchExt:
 
     class Buttons:
         _buttonList = [
-            'Ch1Enc',
-            'Ch2Enc',
-            'Ch3Enc',
-            'Ch4Enc',
-            'Ch5Enc',
-            'Ch6Enc',
-            'Ch7Enc',
-            'Ch8Enc',
-
             'Ch1Rec',
             'Ch2Rec',
             'Ch3Rec',
@@ -433,6 +478,15 @@ class XTouchExt:
             'Ch6Sel',
             'Ch7Sel',
             'Ch8Sel',
+
+            'Ch1Enc',
+            'Ch2Enc',
+            'Ch3Enc',
+            'Ch4Enc',
+            'Ch5Enc',
+            'Ch6Enc',
+            'Ch7Enc',
+            'Ch8Enc',
 
             'Ch1Touch',
             'Ch2Touch',
