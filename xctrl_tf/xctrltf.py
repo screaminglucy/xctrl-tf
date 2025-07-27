@@ -9,19 +9,21 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 global x2tf
 METER_HISTORY_LENGTH = 10
-
+FADER_TIMEOUT = 2
 
 #callbacks
 def updateTFFader (index,value):
     db = XTouch.fader_value_to_db(value)
     if index <= 7:
         chan = x2tf.xtouchChToTFCh(index)
+        x2tf.fader_values[chan] = db * 100
         x2tf.t.sendFaderValue(chan,db)
     if index == 8: #main fader
         if x2tf.main_fader_rev == False:
             x2tf.t.sendMainFaderValue(db)
         else:
             x2tf.t.sendMainFXFaderValue(db,x2tf.fx_select)
+        x2tf.main_fader_value = db * 100
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
@@ -149,7 +151,11 @@ def buttonPress (button):
             ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
             x2tf.xtouch_fader_in_use[ch] = button.pressed
         else:
-            x2tf.xtouch_fader_in_use[8] = button.pressed
+            ch = 8
+            x2tf.xtouch_fader_in_use[ch] = button.pressed
+        if not button.pressed: #fader released
+            x2tf.xtouchext_fader_in_use_timeout[ch] = time.time()
+
     
 
 def onGlobalMuteRcv (value):
@@ -264,7 +270,9 @@ class xctrltf:
         self.main_fader_rev = False
         self.main_rev_fader_value = [0] * 2
         self.xtouch_fader_in_use = [False]*9
+        self.xtouch_fader_in_use_timeout = [time.time()]*9
         self.xtouchext_fader_in_use = [False]*8
+        self.xtouchext_fader_in_use_timeout = [time.time()]*8
         self.ch_solos = [False]*40
         self.ch_mutes = [False]*40
         self.ch_master_mutes = [False] * 40
@@ -452,10 +460,12 @@ class xctrltf:
         while self.running:
             i = 0
             if self.connected:      
-                while (self.t.isQueueEmpty() == False):
+                fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
+                while (self.t.isQueueEmpty() == False) or fader_in_use:
                     time.sleep(0.1)
+                    fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
                 for i in range(8):
-                    if self.xtouch_fader_in_use[i] == False:
+                    if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
                         self.t.getFaderValue(self.xtouchChToTFCh(i))
                     self.t.getChannelOn(self.xtouchChToTFCh(i))
                     if i % 4 == 0:
@@ -465,7 +475,7 @@ class xctrltf:
                         i = 1
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
-                if self.xtouch_fader_in_use[8] == False:    
+                if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
                     self.t.getMainFaderValue()
                     self.t.getMainFXFaderValue(0)
                     self.t.getMainFXFaderValue(1)
@@ -501,7 +511,7 @@ class xctrltf:
         db = tf.fader_value_to_db(value)
         v = XTouch.fader_db_to_value(db)
         if index >= 0 and index < 8:
-            if self.xtouch_fader_in_use[index] == False:
+            if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
 
     def updateMainFader (self, value):
@@ -510,7 +520,7 @@ class xctrltf:
             index = 8
             db = tf.fader_value_to_db(value)
             v = XTouch.fader_db_to_value(db)
-            if self.xtouch_fader_in_use[index] == False:
+            if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
 
     def updateMainFXFader (self, fx, value):
@@ -519,7 +529,7 @@ class xctrltf:
         if self.main_fader_rev and self.fx_select == fx:
             db = tf.fader_value_to_db(value)
             v = XTouch.fader_db_to_value(db)
-            if self.xtouch_fader_in_use[index] == False:
+            if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
 
     def updateFaderName(self,chan,value):
