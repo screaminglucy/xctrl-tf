@@ -502,7 +502,7 @@ class XTouchExt:
 
         class LEDState(Enum):
             Off = 0
-            Blinking = 64
+            Blinking = 1
             On = 127
 
         class Button():
