@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 global x2tf
 METER_HISTORY_LENGTH = 10
-FADER_TIMEOUT = 2
+FADER_TIMEOUT = 4
 
 #callbacks
 def updateTFFader (index,value):
