@@ -194,7 +194,8 @@ class XTouchExt:
 
     '''
     The colors of the entire unit LCD are set with a single Sysex message. The message is as follows:
-
+    Full size XTouch (all scribbles red)
+    F0 00 00 66 14 72 01 01 01 01 01 01 01 01 F7
     Extender (all scribbles red):
     F0 00 00 66 15 72 01 01 01 01 01 01 01 01 F7
 
