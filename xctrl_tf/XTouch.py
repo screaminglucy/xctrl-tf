@@ -130,6 +130,12 @@ class XTouch:
             except :
                 pass
 
+    def clearOutgoingPackets(self):
+        empty = self.outbound_q.empty()
+        while empty == False:
+            msg = self.outbound_q.get(block=True)
+            empty = self.outbound_q.empty()
+
     def sendRawMsg(self, msg):
         self.outbound_q.put(msg)
 
@@ -203,9 +209,12 @@ class XTouch:
             if self.onButtonChange:
                 self.onButtonChange(self.buttons.buttons[int(data[1])])
         elif data[0] >= 0xE0 and data[0] <= 0xE8:
-            logger.debug('Fader: (' + str(int(data[0] - 0xE0)) + ', ' + str(data[2] << 8 | data[1]) + ')')
+            channel = int(data[0] - 0xE0)
+            value = int(data[2] << 8 | data[1])
+            logger.debug('Fader: (' + str(channel) + ', ' + str(value) + ')')
+            self.SendSlider(channel, value) #send value back right away to confirm and stop glitchy faders
             if self.onSliderChange:
-                self.onSliderChange(int(data[0] - 0xE0), int(data[2] << 8 | data[1]))
+                self.onSliderChange(channel, value)
         elif data[0] == 0xB0:
             if self.onEncoderChange:
                 self.onEncoderChange(int(data[1] - 0x10), int(0x40 - data[2]) if data[2] > 0x40 else data[2])
