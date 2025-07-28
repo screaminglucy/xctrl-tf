@@ -471,7 +471,7 @@ class tf_rcp:
                 self.sock.sendall(msg)
                 time.sleep(0.001)
             except :
-                pass
+                time.sleep(0.001)
 
  
     def isQueueEmpty (self):

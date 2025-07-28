@@ -128,7 +128,7 @@ class XTouch:
                 self.sock.sendto(bytearray(msg), (self.ip, 10111))
                 time.sleep(0.001)
             except :
-                pass
+                time.sleep(0.001)
 
     def clearOutgoingPackets(self):
         empty = self.outbound_q.empty()

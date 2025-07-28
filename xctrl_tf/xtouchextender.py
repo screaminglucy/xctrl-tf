@@ -73,6 +73,7 @@ class XTouchExt:
         self.name = name
         self.running = False
         self._active = False
+        self.counter = 0
         self.input_port = None
         self.output_port = None
         self.outbound_q = queue.Queue()
@@ -143,8 +144,11 @@ class XTouchExt:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.output_port.send(msg)
+                self.counter += 1
+                if self.counter % 8 == 0:
+                    time.sleep(0.001) #let other things run!
             except :
-                pass
+                time.sleep(0.001)
         self.output_port.close()
         self.input_port.close()    
 
