@@ -189,6 +189,9 @@ def buttonPressExt (button):
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
+        button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
+    if 'Sel' in button.name and button.pressed == False:
+        ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
 
         x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] 
         x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
