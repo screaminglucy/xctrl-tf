@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 global x2tf
 METER_HISTORY_LENGTH = 10
-FADER_TIMEOUT = 4
+FADER_TIMEOUT = 2
 
 #callbacks
 def updateTFFader (index,value):
@@ -153,8 +153,7 @@ def buttonPress (button):
         else:
             ch = 8
             x2tf.xtouch_fader_in_use[ch] = button.pressed
-        if not button.pressed: #fader released
-            x2tf.xtouchext_fader_in_use_timeout[ch] = time.time()
+        x2tf.xtouch_fader_in_use_timeout[ch] = time.time()
 
     
 
@@ -396,16 +395,19 @@ class xctrltf:
             if self.main_fader_rev == False:
                 maindb = tf.fader_value_to_db(self.main_fader_value)
                 mainv = XTouch.fader_db_to_value(maindb)
-                self.xtouch.SendSlider(8,mainv)
+                if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
+                    self.xtouch.SendSlider(8,mainv)
             else:
                 maindb = tf.fader_value_to_db(self.main_rev_fader_value[self.fx_select])
                 mainv = XTouch.fader_db_to_value(maindb)
-                self.xtouch.SendSlider(8,mainv)
+                if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
+                    self.xtouch.SendSlider(8,mainv)
             for i in range(8):
                 chan = self.xtouchChToTFCh(i)
                 db = tf.fader_value_to_db(self.fader_values[chan])
                 v = XTouch.fader_db_to_value(db)
-                self.xtouch.SendSlider(i,v)
+                if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
+                    self.xtouch.SendSlider(i,v)
                 name = self.fader_names[chan][0:6]
                 channelno = str(chan+1)[0:6]
                 if self.fader_names[chan][6:] != "":
