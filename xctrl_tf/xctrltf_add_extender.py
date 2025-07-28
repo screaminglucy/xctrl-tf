@@ -36,6 +36,7 @@ def updateTFFaderExt (index,value):
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
+    x2tf.update_ch_meters_ext(values)
 
 def mixMeterRcv (values):
     x2tf.update_main_meter(values)
@@ -351,6 +352,8 @@ class xctrltf:
         self.last_select_button_push_time = [0] * 8
         self.xtouch_fader_in_use = [False]*9
         self.xtouchext_fader_in_use = [False]*8
+        self.xtouchext_last_meter_update = time.time()
+        self.xtouch_last_meter_update = time.time()
         self.xtouch_fader_in_use_timeout = [time.time()]*9
         self.xtouchext_fader_in_use_timeout = [time.time()]*8
         self.fader_icons = ['none']*40
@@ -627,9 +630,8 @@ class xctrltf:
             if self.connected:      
                 loop_start_time = time.time()
                 fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
-                while (self.t.isQueueEmpty() == False) or fader_in_use:
+                while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
-                    fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
                 for i in range(8):
                     if self.xtouch._active:
                         if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
@@ -658,7 +660,11 @@ class xctrltf:
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False
                 k = k + 1
-                while ((time.time() - loop_start_time) < 1):
+                if fader_in_use:
+                    wait_time = 2
+                else:
+                    wait_time = 1
+                while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
 
     def wait_for_connect (self, skipXTouch=False):
@@ -745,13 +751,28 @@ class xctrltf:
     def update_meter (self, location, value):
         logger.debug ("meter loc = "+str(location)+" value = "+str(value))
         self.xtouch.SetMeterLevelPeak(location, value)
+    
+    def update_meter_ext (self, location, value):
+        logger.debug ("meter loc = "+str(location)+" value = "+str(value))
+        self.xtouchext.SetMeterLevelPeak(location, value)
 
     def update_ch_meters (self, values):
         meter_values = [XTouch.db_to_meter_value(num) for num in values]
         display_meters = []
-        for i in range(8):
-            display_meters.append(meter_values[self.xtouchChToTFCh(i)])
-            self.update_meter (i,display_meters[i])
+        if time.time()-self.xtouch_last_meter_update > 0.3:
+            self.xtouch_last_meter_update = time.time()
+            for i in range(8):
+                display_meters.append(meter_values[self.xtouchChToTFCh(i)])
+                self.update_meter (i,display_meters[i])
+
+    def update_ch_meters_ext (self, values):
+        meter_values = [xtouchextender.db_to_meter_value(num) for num in values]
+        display_meters = []
+        if time.time()-self.xtouchext_last_meter_update > 1:
+            self.xtouchext_last_meter_update = time.time()
+            for i in range(8):
+                display_meters.append(meter_values[self.xtouchExtChToTFCh(i)])
+                self.update_meter_ext (i,display_meters[i])
 
     def update_main_meter(self, values):
         self.update_meter (9,values[9]) #aux9

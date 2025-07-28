@@ -50,21 +50,21 @@ def db_to_meter_value(db):
     if (db < 0):
         db = db * 3
     if (db >= -10):
-        return 8
+        return 8 
     if (db > -15 and db < -10):
-        return 7
+        return 7 
     if (db > -20 and db <= -18):
-        return 6
+        return 6 
     if (db > -15 and db <= -18):
-        return 5
+        return 5 
     if (db > -25 and db <= -15):
-        return 4
+        return 4 
     if (db > -35 and db <= -25):
-        return 3
+        return 3 
     if (db > -40 and db <= -35):
-        return 2
+        return 2 
     if (db > -55 and db <= -40):
-        return 1
+        return 1 
     return 0
 
 class XTouchExt:
@@ -143,7 +143,6 @@ class XTouchExt:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.output_port.send(msg)
-                time.sleep(0.001)
             except :
                 pass
         self.output_port.close()
@@ -245,16 +244,16 @@ class XTouchExt:
         self.sendRawMsg(msg)
 
     def SendMeter(self, index, level):
-        self.meter_levels[index] = level
-        logger.debug (self.meter_levels)
         #self.SendMeters()
-        msg = mido.Message('aftertouch',value=(index<<8)|level)
+        msg = mido.Message('aftertouch',value=(index<<4)|level)
         self.sendRawMsg(msg)
 
-    #def SendMeters(self):
-    #    msg = mido.Message('control_change', control=90+index, value=value)
-    #    self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, 0 + self.channels[0].GetMeterLevel(), 16 + self.channels[1].GetMeterLevel(), 32 + self.channels[2].GetMeterLevel() , 48 + self.channels[3].GetMeterLevel(), 64 + self.channels[4].GetMeterLevel(), \
-    #    80 + self.channels[5].GetMeterLevel(), 96 + self.channels[6].GetMeterLevel(), 112 + self.channels[7].GetMeterLevel(),0xF7]))
+    def SendMeters(self):
+        #msg = mido.Message('control_change', control=90+index, value=value)
+        #self.sendRawMsg(bytearray([0xF0, 0xD0, 0x00, 0 + self.channels[0].GetMeterLevel(), 16 + self.channels[1].GetMeterLevel(), 32 + self.channels[2].GetMeterLevel() , 48 + self.channels[3].GetMeterLevel(), 64 + self.channels[4].GetMeterLevel(), \
+        #80 + self.channels[5].GetMeterLevel(), 96 + self.channels[6].GetMeterLevel(), 112 + self.channels[7].GetMeterLevel(),0xF7]))
+        for i in range (8):
+            self.SendMeter(i,self.channels[i].GetMeterLevel())
   
     def SetMeterLevel(self, channel, level):
         self.channels[channel].SetMeterLevel(level)

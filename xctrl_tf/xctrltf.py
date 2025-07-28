@@ -272,6 +272,7 @@ class xctrltf:
         self.xtouch_fader_in_use_timeout = [time.time()]*9
         self.xtouchext_fader_in_use = [False]*8
         self.xtouchext_fader_in_use_timeout = [time.time()]*8
+        self.xtouch_last_meter_update = time.time()
         self.ch_solos = [False]*40
         self.ch_mutes = [False]*40
         self.ch_master_mutes = [False] * 40
@@ -463,9 +464,8 @@ class xctrltf:
             i = 0
             if self.connected:      
                 fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
-                while (self.t.isQueueEmpty() == False) or fader_in_use:
+                while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
-                    fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
                 for i in range(8):
                     if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
                         self.t.getFaderValue(self.xtouchChToTFCh(i))
@@ -477,6 +477,8 @@ class xctrltf:
                         i = 1
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     self.t.getFX2Send(self.xtouchChToTFCh(i))
+                    while (self.t.isQueueEmpty() == False):
+                        time.sleep(0.1)
                 if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
                     self.t.getMainFaderValue()
                     self.t.getMainFXFaderValue(0)
@@ -485,6 +487,8 @@ class xctrltf:
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False
                 time.sleep(0.5)
+                if fader_in_use:
+                    time.sleep(1)
 
     def wait_for_connect (self):
         while (self.xtouch._active == False) or (self.t._active == False):
@@ -569,9 +573,11 @@ class xctrltf:
     def update_ch_meters (self, values):
         meter_values = [XTouch.db_to_meter_value(num) for num in values]
         display_meters = []
-        for i in range(8):
-            display_meters.append(meter_values[self.xtouchChToTFCh(i)])
-            self.update_meter (i,display_meters[i])
+        if time.time()-self.xtouch_last_meter_update > 0.3:
+            self.xtouch_last_meter_update = time.time()
+            for i in range(8):
+                display_meters.append(meter_values[self.xtouchChToTFCh(i)])
+                self.update_meter (i,display_meters[i])
 
     def update_main_meter(self, values):
         self.update_meter (9,values[9]) #aux9
