@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 #USB MCU mode (mackie control)
+#Tested with Behringer XTouch Extender but since it's mackie control in theory any USB mackie control surface would work
 
 def fader_value_to_db (value):
     if (value == -8192):
