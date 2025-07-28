@@ -317,7 +317,7 @@ class xctrltf:
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.xtouchext = xtouchextender.XTouchExt()
         self.connected = False
-        self.wait_for_connect(skipXTouch=False)
+        self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
         self.xtouch.setOnSliderChange(updateTFFader)
@@ -548,12 +548,15 @@ class xctrltf:
                 self.xtouchext.SendScribble(i, nameExt, channelnoExt, colorExt, False)
                 #choose fx index
                 fx = self.chooseFX(chan)
+                fxExt = self.chooseFX(extChan)
                 #update encoder
                 if fx == 0:
                     self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
-                    self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[extChan]))
                 else:
                     self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
+                if fxExt:
+                    self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[extChan]))
+                else:
                     self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[extChan]))
             self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(0)])
             self.xtouch.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(1)])
@@ -675,12 +678,19 @@ class xctrltf:
                     time.sleep(0.5)
 
     def wait_for_connect (self, skipXTouch=False):
-        while ((self.xtouch._active == False) and not skipXTouch) or (self.t._active == False):
+        if skipXTouch:
+            xtouchTimeout = 5 #we wait 5 secs and then assume we aren't waiting in case just using extender
+        startTime = time.time()
+        timeoutXTouch = False
+        while ((self.xtouch._active == False) and not timeoutXTouch) or (self.t._active == False):
             time.sleep(1)
             if self.xtouch._active == False:
                 print ("waiting to connect to xtouch...")
             if self.t._active == False:
                 print ("waiting to connect to tf...")
+            if time.time() - startTime > xtouchTimeout:
+                timeoutXTouch = True
+                print ("******** xtouch did not connect. Proceeding with extender...")
         self.connected = True
     
     def updateChannelMute(self,chan, value):
