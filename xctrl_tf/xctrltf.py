@@ -473,7 +473,7 @@ class xctrltf:
                     if i % 4 == 0:
                         self.t.getFaderName(self.xtouchChToTFCh(i))
                         self.t.getFaderColor(self.xtouchChToTFCh(i))     
-                        self.t.getChannelSoloOn(i)               
+                        self.t.getChannelSoloOn(self.xtouchChToTFCh(i))               
                         i = 1
                     self.t.getFX1Send(self.xtouchChToTFCh(i))
                     self.t.getFX2Send(self.xtouchChToTFCh(i))

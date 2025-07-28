@@ -627,6 +627,7 @@ class xctrltf:
     def periodicDisplayRefresh(self):
         while self.running:
             k = 0
+            j = 0
             if self.connected:      
                 loop_start_time = time.time()
                 fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
@@ -640,7 +641,7 @@ class xctrltf:
                         if k % 6 == 0:
                             self.t.getFaderName(self.xtouchChToTFCh(i))
                             self.t.getFaderColor(self.xtouchChToTFCh(i))     
-                            self.t.getChannelSoloOn(i)            
+                            self.t.getChannelSoloOn(self.xtouchChToTFCh(i))            
                             k = 1
                         self.t.getFX1Send(self.xtouchChToTFCh(i))
                         self.t.getFX2Send(self.xtouchChToTFCh(i))
@@ -648,6 +649,11 @@ class xctrltf:
                         if self.xtouchext_fader_in_use[i] == False and (time.time() - self.xtouchext_fader_in_use_timeout[i] > FADER_TIMEOUT):
                             self.t.getFaderValue(self.xtouchExtChToTFCh(i))
                         self.t.getChannelOn(self.xtouchExtChToTFCh(i))
+                        if j % 6 == 0:
+                            self.t.getFaderName(self.xtouchExtChToTFCh(i))
+                            self.t.getFaderColor(self.xtouchExtChToTFCh(i))     
+                            self.t.getChannelSoloOn(self.xtouchExtChToTFCh(i))            
+                            j = 1
                         self.t.getFX1Send(self.xtouchExtChToTFCh(i))
                         self.t.getFX2Send(self.xtouchExtChToTFCh(i))
                     while (self.t.isQueueEmpty() == False):
@@ -660,6 +666,7 @@ class xctrltf:
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False
                 k = k + 1
+                j = j + 1
                 if fader_in_use:
                     wait_time = 2
                 else:
