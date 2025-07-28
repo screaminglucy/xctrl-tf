@@ -653,7 +653,6 @@ class xctrltf:
                             self.t.getFaderName(self.xtouchChToTFCh(i))
                             self.t.getFaderColor(self.xtouchChToTFCh(i))     
                             self.t.getChannelSoloOn(self.xtouchChToTFCh(i))            
-                            k = 1
                         self.t.getFX1Send(self.xtouchChToTFCh(i))
                         self.t.getFX2Send(self.xtouchChToTFCh(i))
                     if self.xtouchext.running:
@@ -664,7 +663,6 @@ class xctrltf:
                             self.t.getFaderName(self.xtouchExtChToTFCh(i))
                             self.t.getFaderColor(self.xtouchExtChToTFCh(i))     
                             self.t.getChannelSoloOn(self.xtouchExtChToTFCh(i))            
-                            j = 1
                         self.t.getFX1Send(self.xtouchExtChToTFCh(i))
                         self.t.getFX2Send(self.xtouchExtChToTFCh(i))
                     while (self.t.isQueueEmpty() == False):
@@ -676,6 +674,10 @@ class xctrltf:
                 if self.pendingDisplayUpdate: 
                     self.updateDisplay() 
                     self.pendingDisplayUpdate = False
+                if j%6 == 0:
+                    j = 0
+                if k%6==0:
+                    k = 0
                 k = k + 1
                 j = j + 1
                 if fader_in_use:
