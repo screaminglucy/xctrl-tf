@@ -196,7 +196,7 @@ def buttonPressExt (button):
         x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] 
         x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
         button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
-        x2tf.last_select_button_push_time[ch] = time.time()
+        bank = False
         if time.time() - x2tf.last_select_button_push_time[ch] < 2: #double tap select to change bank!    
             #treat as fader bank change!
             if ch == 7: #bank right
@@ -205,15 +205,18 @@ def buttonPressExt (button):
                 if x2tf.ext_fader_offset > 24:
                     x2tf.ext_fader_offset = 24
                 x2tf.updateDisplay()
-                x2tf.last_select_button_push_time[ch] = 0
+                bank = True
             if ch == 0: #bank left
                 if x2tf.ext_fader_offset >= 8:
                     x2tf.ext_fader_offset -= 8
                 else:
                     x2tf.ext_fader_offset = 0
                 x2tf.updateDisplay()
-                x2tf.last_select_button_push_time[ch] = 0
-        
+                bank = True
+        if bank:
+            x2tf.last_select_button_push_time[ch] = 0
+        else:
+            x2tf.last_select_button_push_time[ch] = time.time()
     if 'Touch' in button.name:
         ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
         x2tf.xtouchext_fader_in_use[ch] = button.pressed
