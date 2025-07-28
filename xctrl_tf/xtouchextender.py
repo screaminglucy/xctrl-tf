@@ -296,6 +296,7 @@ class XTouchExt:
                 logger.info('Encoder: (' + str(control) + ', ' + str(direction) + ')')
         elif msg_type == 'pitchwheel':
             logger.debug('Fader: (' + str(channel) + ', ' + str(value) + ')')
+            self.SendSlider(channel, value) #send value back to confirm and stop glitchy faders
             if self.onSliderChange:
                 self.onSliderChange(channel, int(value))
             
