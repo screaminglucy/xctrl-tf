@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 #USB MCU mode (mackie control)
 #Tested with Behringer XTouch Extender but since it's mackie control in theory any USB mackie control surface would work
+#by adjusting the device byte for scribble strips sysex message
 
 def fader_value_to_db (value):
     if (value == -8192):
