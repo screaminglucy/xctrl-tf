@@ -14,6 +14,8 @@ import queue
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+#XCTRL network mode
+
 timeout = 60
 global current_value_fader_zero
 current_value_fader_zero = 0
