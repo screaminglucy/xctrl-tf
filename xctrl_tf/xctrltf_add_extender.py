@@ -84,7 +84,7 @@ def buttonPress (button):
             x2tf.fader_offset -= 8
         else:
             x2tf.fader_offset = 0
-            x2tf.updateDisplay()
+        x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
         if x2tf.fader_offset <= 23:
             x2tf.fader_offset += 1
@@ -188,9 +188,26 @@ def buttonPressExt (button):
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
+
         x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] 
-        button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
         x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
+        button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
+
+        if time.time() - x2tf.last_select_button_push_time[ch] < 1: #double tap select to change bank!    
+            #treat as fader bank change!
+            if ch == 7: #bank right
+                if x2tf.ext_fader_offset<=23:
+                    x2tf.ext_fader_offset+=8
+                if x2tf.ext_fader_offset > 24:
+                    x2tf.ext_fader_offset = 24
+                x2tf.updateDisplay()
+            if ch == 0: #bank left
+                if x2tf.ext_fader_offset >= 8:
+                    x2tf.ext_fader_offset -= 8
+                else:
+                    x2tf.ext_fader_offset = 0
+                x2tf.updateDisplay()
+        x2tf.last_select_button_push_time[ch] = time.time()
     if 'Touch' in button.name:
         ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
         x2tf.xtouchext_fader_in_use[ch] = button.pressed
@@ -327,10 +344,11 @@ class xctrltf:
         self.fx2_send_en = [False] * 40
         self.chan_encoder_group_adjustment = 0
         self.fader_offset = 0
-        self.ext_fader_offset = 8 #next 8 ch
+        self.ext_fader_offset = 8 #
         self.global_fx_on = True
         self.fader_names = ['ch'] * 40
         self.fader_colors = [7]*40
+        self.last_select_button_push_time = [0] * 8
         self.xtouch_fader_in_use = [False]*9
         self.xtouchext_fader_in_use = [False]*8
         self.xtouch_fader_in_use_timeout = [time.time()]*9
@@ -409,9 +427,9 @@ class xctrltf:
 
     def xtouchExtChToTFCh (self, fader_index):
         if self.map_by_color_en == False:
-            return self.fader_offset + fader_index + self.ext_fader_offset
+            return fader_index + self.ext_fader_offset
         else:
-            return self.ch_custom_map[self.fader_offset + fader_index + self.ext_fader_offset]
+            return self.ch_custom_map[fader_index + self.ext_fader_offset]
     
     def tfChToXtouchCh (self, chan_index):
         if self.map_by_color_en == False:
@@ -421,9 +439,9 @@ class xctrltf:
 
     def tfChToXtouchExtCh (self, chan_index):
         if self.map_by_color_en == False:
-            return chan_index - self.fader_offset - self.ext_fader_offset
+            return chan_index - self.ext_fader_offset
         else:
-            return self.ch_custom_map.index(chan_index) - self.fader_offset - self.ext_fader_offset
+            return self.ch_custom_map.index(chan_index) - self.ext_fader_offset
     
     def dbToEncoder (self, db):
         if db >= 0:
