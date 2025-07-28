@@ -69,11 +69,12 @@ def db_to_meter_value(db):
 
 class XTouchExt:
 
-    def __init__(self, name='X-Touch-Ext'):
-        self.name = name
+    def __init__(self, midiname='X-Touch-Ext', device="X-Touch-Extender"):
+        self.name = midiname
         self.running = False
         self._active = False
         self.counter = 0
+        self.device = device
         self.input_port = None
         self.output_port = None
         self.outbound_q = queue.Queue()
@@ -147,6 +148,7 @@ class XTouchExt:
                 self.counter += 1
                 if self.counter % 8 == 0:
                     time.sleep(0.001) #let other things run!
+                    self.counter = 1
             except :
                 time.sleep(0.001)
         self.output_port.close()
@@ -236,15 +238,18 @@ class XTouchExt:
 
     def SendScribble(self, index, topText, bottomText, color, bottomInverted):
         self.channels[index].scribbleColor = color 
+        deviceByte = 0x15
+        if self.device != "X-Touch-Extender":
+            deviceByte = 0x14
         colors = []
         for i in range(8):
             colors.append(int(self.channels[i].scribbleColor))
         logger.debug ("send scribble " +topText +" " + bottomText)
-        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x12, 0x00 + (index*7)] + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) ))
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, deviceByte, 0x12, 0x00 + (index*7)] + list(bytearray(topText.ljust(7, '\0'), 'utf-8')) ))
         self.sendRawMsg(msg)
-        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x12, 0x38 + (index*7)] + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) ))
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, deviceByte, 0x12, 0x38 + (index*7)] + list(bytearray(bottomText.ljust(7, '\0'), 'utf-8')) ))
         self.sendRawMsg(msg)
-        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, 0x15, 0x72] + list(colors)))
+        msg = mido.Message('sysex', data=([0x00, 0x00, 0x66, deviceByte, 0x72] + list(colors)))
         self.sendRawMsg(msg)
 
     def SendMeter(self, index, level):
