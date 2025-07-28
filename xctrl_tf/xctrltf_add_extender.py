@@ -562,7 +562,7 @@ class xctrltf:
                     self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
                 else:
                     self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
-                if fxExt:
+                if fxExt == 0:
                     self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[extChan]))
                 else:
                     self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[extChan]))
