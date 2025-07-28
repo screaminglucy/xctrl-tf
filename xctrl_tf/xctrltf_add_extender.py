@@ -299,7 +299,7 @@ class xctrltf:
         self.xtouch = XTouch.XTouch(xtouch_ip)
         self.xtouchext = xtouchextender.XTouchExt()
         self.connected = False
-        self.wait_for_connect(skipXTouch=True)
+        self.wait_for_connect(skipXTouch=False)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
         self.xtouch.setOnSliderChange(updateTFFader)
