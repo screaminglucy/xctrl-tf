@@ -295,6 +295,14 @@ class tf_rcp:
             cmd += '1'
         self.send_command(cmd)
 
+    def enableSoloBus (self):
+        cmd = 'set MIXER:Current/Mix/Fader/On '+str(self.solo_mix)+ ' 0 1'
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/Mix/Fader/Level '+ str(self.solo_mix)+' 0 0' 
+        self.send_command(cmd)
+        for i in range(32):
+            self.sendChannelSolo (i,0)
+
     def sendChannelSolo(self,channel,value):
         #enable channel on solo aux mix
         cmd = 'set MIXER:Current/InCh/ToMix/On ' + str(channel)+' '+str(self.solo_mix)+' '
@@ -304,8 +312,6 @@ class tf_rcp:
             cmd += '0'
         self.send_command(cmd)
         cmd = 'set MIXER:Current/InCh/ToMix/Level '+str(channel)+' '+str(self.solo_mix)+' 0'
-        self.send_command(cmd)
-        cmd = 'set MIXER:Current/Mix/Fader/Level '+ str(self.solo_mix)+' 0 0' 
         self.send_command(cmd)
 
     def getChannelSoloOn(self,channel):
@@ -466,6 +472,7 @@ class tf_rcp:
                 time.sleep(0.001)
             except :
                 pass
+
  
     def isQueueEmpty (self):
         e=self.outbound_q.empty()

@@ -812,6 +812,7 @@ while running:
     time.sleep(1)
     if x2tf.t._active:
         if firstSync:
+            x2tf.t.enableSoloBus()
             time.sleep(5)
             x2tf.syncTF2XTouch()
             time.sleep(5)
@@ -824,6 +825,7 @@ while running:
             logger.info ("Finished syncing")
         else:
             if synced == False:
+                x2tf.t.enableSoloBus()
                 time.sleep(2)
                 x2tf.syncTF2XTouch()
                 logger.info ("syncing after reconnect")
