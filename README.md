@@ -2,10 +2,10 @@
 
 This is python code to control a Yamaha TF mixer with a Behringer XTouch control surface in network XCtrl mode
 
-It also supports using an XTouch extender in USB mackie control mode (see xtouchextender.py). 
+It also supports using an XTouch or XTouch extender in USB mackie control mode. 
 
 ### Quick start
-Set the IP addresses correctly inside xctrlpy.py and then run xctrltf.py (or use xctrl_add_extender.py for USB mode)
+Set the IP addresses correctly inside xctrlpy.py and then run xctrltf.py.
 
 To run on Raspberry Pi:
 1. Create python venv `python -m venv .venv`
