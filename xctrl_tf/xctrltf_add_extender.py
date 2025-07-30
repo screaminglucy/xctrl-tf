@@ -317,13 +317,13 @@ def encoderChangeExt(index, direction):
 
 class xctrltf:
 
-    def __init__(self, xtouch_ip='192.168.10.80', tf_ip='192.168.10.10'):
+    def __init__(self, tf_ip='192.168.10.10'):
         self.map_by_color_en = False
         self.fx_select = 0
         self.pendingDisplayUpdate = True
         self.t = tf.tf_rcp(tf_ip)
-        self.xtouch = XTouch.XTouch(xtouch_ip)
-        self.xtouchext = xtouchextender.XTouchExt()
+        self.xtouch = XTouch.XTouch()
+        self.xtouchext =  XTouch.XTouch(use_extender=True) #xtouchextender.XTouchExt()
         self.connected = False
         self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
