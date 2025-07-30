@@ -18,8 +18,6 @@ logging.basicConfig(level=logging.INFO)
 # or USB mackie control
 
 timeout = 60
-global current_value_fader_zero
-current_value_fader_zero = 0
 
 class XTouch:
 
@@ -896,30 +894,8 @@ class XTouch:
         def GetButton(self, name: str):
             return self.buttons[self._buttonList.index(name)]
 
-def PrintButton(button):
-    logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
-    button.SetLED(button.pressed)
-
-def PrintFlip(button):
-    logger.info('FLIP %s' % ('PRESSED' if button.pressed else 'RELEASED'))
-
-def FlipPress(button):
-    logger.info('PRESSED FLIP')
-
-def FlipRelease(button):
-    logger.info('RELEASED FLIP')
 
 
-def SetAllSliders(index, value):
-    xtouch.SendScribble(index, '', '', 5, False)
-    for i in range(9):
-        if i != index:
-            xtouch.SendSlider(i, value)
-            xtouch.SendScribble(i, '', '', 7, False)
-
-def SetSliderValue (index,value):
-    global current_value_fader_zero
-    current_value_fader_zero = value
 
 
 
