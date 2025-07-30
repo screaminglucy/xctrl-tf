@@ -21,55 +21,6 @@ logging.basicConfig(level=logging.INFO)
 #by adjusting the device byte for scribble strips sysex message
 #relevant doc: https://htlab.net/computer/protocol/mackie-control/MackieControlProtocol_EN.pdf
 
-def fader_value_to_db (value):
-    if (value == -8192):
-        db = -120
-    else:
-        value = int((value + 8192)*2)
-        db = 20*math.log10(value / 24575) *3.5
-        if value > 24575:
-            db = (value - 24575) / 800
-    db = int (db)
-    logger.debug ("todb: fader value = "+str(value)+ " db value = "+str(db))
-    return db
-
-def fader_db_to_value (db):
-    value = math.pow(10,((db/3.5)/20))*24575
-    if (db > 0):
-        value = (db * 800)+24575
-    if (db < -100):
-        value = 0
-    if value < 0:
-        value = 0
-    value = int (value)
-    value = ( value / 2 ) - 8192
-    value = int (value)
-    logger.debug ("tovalue: fader value = "+str(value)+ ", db value = "+str(db))
-    return value
-
-def db_to_meter_value(db):
-    #fudged for now
-    db = db + 16
-    if (db < 0):
-        db = db * 3
-    if (db >= -10):
-        return 8 
-    if (db > -15 and db < -10):
-        return 7 
-    if (db > -20 and db <= -18):
-        return 6 
-    if (db > -15 and db <= -18):
-        return 5 
-    if (db > -25 and db <= -15):
-        return 4 
-    if (db > -35 and db <= -25):
-        return 3 
-    if (db > -40 and db <= -35):
-        return 2 
-    if (db > -55 and db <= -40):
-        return 1 
-    return 0
-
 class XTouchExt:
 
     def __init__(self, midiname='X-Touch-Ext', device="X-Touch-Extender"):
@@ -91,6 +42,55 @@ class XTouchExt:
         self._active = False
         self.lastMsgTime = None
         self.connect()
+
+    def fader_value_to_db (self, value):
+        if (value == -8192):
+            db = -120
+        else:
+            value = int((value + 8192)*2)
+            db = 20*math.log10(value / 24575) *3.5
+            if value > 24575:
+                db = (value - 24575) / 800
+        db = int (db)
+        logger.debug ("todb: fader value = "+str(value)+ " db value = "+str(db))
+        return db
+
+    def fader_db_to_value (self, db):
+        value = math.pow(10,((db/3.5)/20))*24575
+        if (db > 0):
+            value = (db * 800)+24575
+        if (db < -100):
+            value = 0
+        if value < 0:
+            value = 0
+        value = int (value)
+        value = ( value / 2 ) - 8192
+        value = int (value)
+        logger.debug ("tovalue: fader value = "+str(value)+ ", db value = "+str(db))
+        return value
+
+    def db_to_meter_value(self, db):
+        #fudged for now
+        db = db + 16
+        if (db < 0):
+            db = db * 3
+        if (db >= -10):
+            return 8 
+        if (db > -15 and db < -10):
+            return 7 
+        if (db > -20 and db <= -18):
+            return 6 
+        if (db > -15 and db <= -18):
+            return 5 
+        if (db > -25 and db <= -15):
+            return 4 
+        if (db > -35 and db <= -25):
+            return 3 
+        if (db > -40 and db <= -35):
+            return 2 
+        if (db > -55 and db <= -40):
+            return 1 
+        return 0
 
     @property
     def active(self):

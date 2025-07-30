@@ -14,7 +14,7 @@ FADER_TIMEOUT = 2
 
 #callbacks
 def updateTFFader (index,value):
-    db = XTouch.fader_value_to_db(value)
+    db = x2tf.xtouch.fader_value_to_db(value)
     if index <= 7:
         chan = x2tf.xtouchChToTFCh(index)
         x2tf.fader_values[chan] = db * 100
@@ -28,7 +28,7 @@ def updateTFFader (index,value):
 
 def updateTFFaderExt (index,value):
     logger.debug ("updateTFFaderExt "+str(index)+ " "+str(value))
-    db = xtouchextender.fader_value_to_db(value)
+    db = x2tf.xtouchext.fader_value_to_db(value)
     if index <= 7:
         chan = x2tf.xtouchExtChToTFCh(index)
         x2tf.t.sendFaderValue(chan,db)
@@ -522,12 +522,12 @@ class xctrltf:
         else:
             if self.main_fader_rev == False:
                 maindb = tf.fader_value_to_db(self.main_fader_value)
-                mainv = XTouch.fader_db_to_value(maindb)
+                mainv = self.xtouch.fader_db_to_value(maindb)
                 if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
                     self.xtouch.SendSlider(8,mainv)
             else:
                 maindb = tf.fader_value_to_db(self.main_rev_fader_value[self.fx_select])
-                mainv = XTouch.fader_db_to_value(maindb)
+                mainv = self.xtouch.fader_db_to_value(maindb)
                 if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
                     self.xtouch.SendSlider(8,mainv)
             for i in range(8):
@@ -535,8 +535,8 @@ class xctrltf:
                 extChan = self.xtouchExtChToTFCh(i)
                 db = tf.fader_value_to_db(self.fader_values[chan])
                 dbExt =  tf.fader_value_to_db(self.fader_values[extChan])
-                v = XTouch.fader_db_to_value(db)
-                vext = xtouchextender.fader_db_to_value(dbExt)
+                v = self.xtouch.fader_db_to_value(db)
+                vext = self.xtouchext.fader_db_to_value(dbExt)
                 if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
                     self.xtouch.SendSlider(i,v)
                 if self.xtouchext_fader_in_use[i] == False and (time.time() - self.xtouchext_fader_in_use_timeout[i] > FADER_TIMEOUT):
@@ -720,8 +720,8 @@ class xctrltf:
         index = self.tfChToXtouchCh(chan)
         indexExt = self.tfChToXtouchExtCh(chan)
         db = tf.fader_value_to_db(value)
-        v = XTouch.fader_db_to_value(db)
-        vExt = xtouchextender.fader_db_to_value(db)
+        v = self.xtouch.fader_db_to_value(db)
+        vExt = self.xtouchext.fader_db_to_value(db)
         if index >= 0 and index < 8:
             if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
@@ -735,7 +735,7 @@ class xctrltf:
         if self.main_fader_rev == False:
             index = 8
             db = tf.fader_value_to_db(value)
-            v = XTouch.fader_db_to_value(db)
+            v = self.xtouch.fader_db_to_value(db)
             if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
 
@@ -744,7 +744,7 @@ class xctrltf:
         index = 8
         if self.main_fader_rev and self.fx_select == fx:
             db = tf.fader_value_to_db(value)
-            v = XTouch.fader_db_to_value(db)
+            v = self.xtouch.fader_db_to_value(db)
             if self.xtouch_fader_in_use[index] == False and (time.time() - self.xtouch_fader_in_use_timeout[index] > FADER_TIMEOUT):
                 self.xtouch.SendSlider(index,v)
 
@@ -784,7 +784,7 @@ class xctrltf:
         self.xtouchext.SetMeterLevelPeak(location, value)
 
     def update_ch_meters (self, values):
-        meter_values = [XTouch.db_to_meter_value(num) for num in values]
+        meter_values = [self.xtouch.db_to_meter_value(num) for num in values]
         display_meters = []
         if time.time()-self.xtouch_last_meter_update > 0.3:
             self.xtouch_last_meter_update = time.time()
@@ -793,7 +793,7 @@ class xctrltf:
                 self.update_meter (i,display_meters[i])
 
     def update_ch_meters_ext (self, values):
-        meter_values = [xtouchextender.db_to_meter_value(num) for num in values]
+        meter_values = [self.xtouchext.db_to_meter_value(num) for num in values]
         display_meters = []
         if time.time()-self.xtouchext_last_meter_update > 1:
             self.xtouchext_last_meter_update = time.time()
