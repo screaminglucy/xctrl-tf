@@ -92,6 +92,8 @@ def fx_enable_button (button, ch , fx):
 
 
 def buttonPress (button):
+    blink_names_fx1 = ['MIDITracks','Inputs','AudioTracks','AudioInst','Aux','Buses','Outputs','User']
+    blink_names_fx2 = ['F1','F2','F3','F4','F5','F6','F7','F8']
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
     if 'Mute' not in button.name and 'Group' not in button.name and 'Control' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name and 'Drop' not in button.name and 'Solo' not in button.name \
         and 'F1' != button.name and 'F2' != button.name and 'F3' !=  button.name and 'F4' !=  button.name and 'F5' !=  button.name and 'F6' !=  button.name and 'F7' !=  button.name and 'F8' !=  button.name \
@@ -117,6 +119,18 @@ def buttonPress (button):
         if x2tf.fader_offset >= 1:
             x2tf.fader_offset -= 1
             x2tf.updateDisplay()
+    if button.name == 'Write' and button.pressed:
+        x2tf.fader_offset = 0
+        x2tf.updateDisplay()
+    if button.name == 'Trim' and button.pressed:
+        x2tf.fader_offset = 8
+        x2tf.updateDisplay()
+    if button.name == 'Save' and button.pressed:
+        x2tf.fader_offset = 16
+        x2tf.updateDisplay()
+    if button.name == 'Undo' and button.pressed:
+        x2tf.fader_offset = 24
+        x2tf.updateDisplay()
     if button.name == 'Scrub' and button.pressed==False:
         x2tf.syncTF2XTouch()
         x2tf.updateDisplay()
@@ -166,8 +180,12 @@ def buttonPress (button):
     if button.name == 'Control' and button.pressed==False:
         if x2tf.fx_select == 0:
             x2tf.fx_select = 1
+            for b in blink_names_fx2:
+                x2tf.xtouch.GetButton(b).BlinkLED()
         else:
             x2tf.fx_select = 0
+            for b in blink_names_fx1:
+                x2tf.xtouch.GetButton(b).BlinkLED()
         button.SetLED(x2tf.fx_select == 1)
         x2tf.updateDisplay()
     if button.name == 'Global' and button.pressed == True:
@@ -186,6 +204,13 @@ def buttonPress (button):
         else:
             ch = 8
             x2tf.xtouch_fader_in_use[ch] = button.pressed
+            if x2tf.main_fader_rev:
+                if x2tf.fx_select == 0 and button.pressed == True:
+                    for b in blink_names_fx1:
+                        x2tf.xtouch.GetButton(b).BlinkLED()
+                if x2tf.fx_select == 1 and button.pressed == True:
+                    for b in blink_names_fx2:
+                        x2tf.xtouch.GetButton(b).BlinkLED()
         x2tf.xtouch_fader_in_use_timeout[ch] = time.time()
     if 'F1' == button.name and button.pressed == True:
         ch = x2tf.xtouchChToTFCh(0)
@@ -338,6 +363,7 @@ def onFXSendEnValueRcv (fx_select, chan, on):
 last_encoder_time = time.time()
 
 def encoderChange(index, direction):
+    blink_names_fx1 = ['MIDITracks','Inputs','AudioTracks','AudioInst','Aux','Buses','Outputs','User']
     global last_encoder_time
     logger.debug ("encoder change "+str(index)+" "+str(direction))
     if (index < 8):
@@ -359,8 +385,12 @@ def encoderChange(index, direction):
         #update encoder
         if fx == 0:
             x2tf.xtouch.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx1_sends[chan]))
+            ledname = blink_names_fx1[index]
+            x2tf.xtouch.GetButton(ledname).BlinkLED()
         else:
             x2tf.xtouch.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx2_sends[chan]))
+            ledname = 'F' + str(index+1)
+            x2tf.xtouch.GetButton(ledname).BlinkLED()
     if index == 44: #big knob
         chlist=x2tf.getChSelected()
         stop = False
