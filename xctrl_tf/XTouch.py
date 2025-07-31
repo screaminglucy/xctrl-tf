@@ -136,12 +136,14 @@ class XTouch:
         try:
             ins = mido.get_input_names()
             outs = mido.get_output_names()
+            print ("ins "+str(ins))
+            print ("outs "+str(outs))
             if self.extender == False:
                 for i in ins:
-                    if self.usb_name in i and self.usb_extender_name not in i:
+                    if self.usb_name in i and self.usb_extender_name not in i and 'MIDIIN' not in i:
                         in_port_name = i
                 for o in outs:
-                    if self.usb_name in o and self.usb_extender_name not in o:
+                    if self.usb_name in o and self.usb_extender_name not in o and 'MIDIOUT' not in o:
                         out_port_name = o
             else:
                 for i in ins:
@@ -157,7 +159,7 @@ class XTouch:
             _thread.start_new_thread(self.getUSBMsg, ())
             _thread.start_new_thread(self.processOutgoingUSBPackets, ())
             self._active = True
-            logger.info("Midi connection opened")
+            logger.info("Midi connection opened. In:"+in_port_name+ " Out:"+out_port_name)
             return True
         except OSError as e:
             logger.error(f"Error opening MIDI port: {e}")
