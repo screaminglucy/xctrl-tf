@@ -114,6 +114,8 @@ class tf_rcp:
         self.onChannelMute = None
         self.onChannelSolo = None
         self.onGlobalMuteRcv = None
+        self.onChannelMasterFXEn = None
+        self.onMixFXEn = None
         self.onMainFaderValueRcv = None
         self.onMainFXFaderValueRcv = None
         self.onFXSendEnValueRcv = None
@@ -272,6 +274,22 @@ class tf_rcp:
             cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1 ' + str(value) 
         self.send_command(cmd)
 
+    def sendFX2SendEnable (self, channel, on):
+        if on:
+            val = '1'
+        else:
+            val = '0'
+        cmd = 'set MIXER:Current/InCh/ToFx/On ' + str(channel) + ' 1 ' + val
+        self.send_command(cmd)
+    
+    def sendFX1SendEnable (self, channel, on):
+        if on:
+            val = '1'
+        else:
+            val = '0'
+        cmd = 'set MIXER:Current/InCh/ToFx/On ' + str(channel) + ' 0 ' + val
+        self.send_command(cmd)
+
     def sendGlobalFxMute (self, value):
         cmd = 'set MIXER:Current/MuteMaster/On 1 0 '
         if value:
@@ -280,8 +298,28 @@ class tf_rcp:
             cmd += '0'
         self.send_command(cmd)
 
+    def sendMixFXEn(self, value, fx):
+        if value:
+            v = ' 1'
+        else:
+            v = ' 0'
+        if fx == 1:
+            fx = '0 '
+        elif fx == 2:
+            fx = '2 '
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/On '+fx +str(self.mix)+v
+        self.send_command(cmd)
+
     def getGlobalFxMute (self):
         cmd = 'get MIXER:Current/MuteMaster/On 1 0 '
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/FxRtnCh/ToMix/On 0 ' +str(self.mix)
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/FxRtnCh/ToMix/On 2 '+str(self.mix)
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/FxRtnCh/Fader/On 0 0 '
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/FxRtnCh/Fader/On 2 0 '
         self.send_command(cmd)
 
     def sendChannelMute(self,channel,value):
@@ -349,7 +387,8 @@ class tf_rcp:
                 self.send_command(cmd2)
                 logger.debug ("sending fader update " + cmd +' ' + cmd2)
             self.last_fader_updates[chan] = time.time() 
-            
+
+
     def HandleMsg (self):
         # receive a message 
         while self.running:
@@ -401,6 +440,21 @@ class tf_rcp:
                                 level = int(messageString.split(' ')[5])
                                 if self.onFXSendValueRcv:
                                     self.onFXSendValueRcv(fx_select, chan,level)
+                            elif messageString.startswith('NOTIFY set MIXER:Current/FxRtnCh/Fader/On') or messageString.startswith('OK get MIXER:Current/FxRtnCh/Fader/On'):
+                                fx_select = int(messageString.split(' ')[3])
+                                on = int(messageString.split(' ')[5])
+                                if on == 0:
+                                    on = False
+                                else:
+                                    on = True
+                                if fx_select == 0 or fx_select == 1:
+                                    #fx1
+                                    if self.onChannelMasterFXEn:
+                                        self.onChannelMasterFXEn(1,on)
+                                else:
+                                    #fx2
+                                    if self.onChannelMasterFXEn:
+                                        self.onChannelMasterFXEn(2,on)
                             elif messageString.startswith('OK get MIXER:Current/InCh/ToFx/On') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToFx/On')  :
                                 chan = int(messageString.split(' ')[3])
                                 fx_select = int(messageString.split(' ')[4])
@@ -429,6 +483,19 @@ class tf_rcp:
                                 value = (int(messageString.split(' ')[5]) == 1)
                                 if self.onGlobalMuteRcv:
                                     self.onGlobalMuteRcv(value)
+                            elif ((messageString.startswith('OK get MIXER:Current/FxRtnCh/ToMix/On ') or messageString.startswith('NOTIFY set MIXER:Current/FxRtnCh/ToMix/On ')) and self.mix != 0) :
+                                logger.debug(messageString)
+                                fx = int(messageString.split(' ')[3])
+                                mix = int(messageString.split(' ')[4])
+                                value = int(messageString.split(' ')[5])
+                                if value == 0:
+                                    value = False
+                                else:
+                                    value = True
+                                if fx == 0:
+                                    fx = 1
+                                if self.onMixFXEn and (( self.mix == mix or (self.mix-1 == mix and self.mixStereo)) ):
+                                    self.onMixFXEn(fx,value)
                             elif ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On ') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On ')) and self.mix != 0) :
                                 logger.debug(messageString)
                                 chan = int(messageString.split(' ')[3])

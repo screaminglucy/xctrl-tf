@@ -23,6 +23,7 @@ class XTouch:
 
     def __init__(self, use_extender=False):
         self.ip = None
+        self.running = False
         self.usb_name = "X-Touch"
         self.usb_extender_name = "X-Touch-Ext"
         self.extender = use_extender
@@ -140,10 +141,10 @@ class XTouch:
             print ("outs "+str(outs))
             if self.extender == False:
                 for i in ins:
-                    if self.usb_name in i and self.usb_extender_name not in i and 'MIDIIN' not in i:
+                    if self.usb_name in i and self.usb_extender_name not in i and 'MIDIIN' not in i and 'X-TOUCH_EXT' not in i:
                         in_port_name = i
                 for o in outs:
-                    if self.usb_name in o and self.usb_extender_name not in o and 'MIDIOUT' not in o:
+                    if self.usb_name in o and self.usb_extender_name not in o and 'MIDIOUT' not in o and 'X-TOUCH_EXT' not in o:
                         out_port_name = o
             else:
                 for i in ins:
@@ -362,6 +363,13 @@ class XTouch:
                     control = control - 16
                     if self.onEncoderChange:
                         self.onEncoderChange(int(control), direction)
+                    logger.info('Encoder: (' + str(control) + ', ' + str(direction) + ')')
+                if control == 60: #scrub wheel
+                    direction = 1
+                    if value >= 65:
+                        direction = -1
+                    if self.onEncoderChange:
+                        self.onEncoderChange(44, direction)
                     logger.info('Encoder: (' + str(control) + ', ' + str(direction) + ')')
             elif msg_type == 'pitchwheel':
                 logger.debug('Fader: (' + str(channel) + ', ' + str(value) + ')')
