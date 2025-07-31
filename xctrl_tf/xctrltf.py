@@ -5,12 +5,12 @@ import time
 import logging
 import _thread
 
-
+global x2tf
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-global x2tf
 METER_HISTORY_LENGTH = 10
 FADER_TIMEOUT = 2
+
 
 #callbacks
 def updateTFFader (index,value):
@@ -67,8 +67,9 @@ def onChannelSolo (chan,value):
     x2tf.updateChannelSolo(chan,value)
 
 def onChannelMasterMute (chan,value):
-    value = not value
-    x2tf.updateChannelMasterMute(chan,value)
+    if x2tf is not None:
+        value = not value
+        x2tf.updateChannelMasterMute(chan,value)
 
 def fx_enable_button (button, ch , fx):
     if fx == 2:
@@ -134,6 +135,10 @@ def buttonPress (button):
     if button.name == 'Scrub' and button.pressed==False:
         x2tf.syncTF2XTouch()
         x2tf.updateDisplay()
+    x2tf.xtouch.GetButton('Write').SetLED(x2tf.fader_offset == 0)
+    x2tf.xtouch.GetButton('Trim').SetLED(x2tf.fader_offset == 8)
+    x2tf.xtouch.GetButton('Save').SetLED(x2tf.fader_offset == 16)
+    x2tf.xtouch.GetButton('Undo').SetLED(x2tf.fader_offset == 24)
     if 'Mute' in button.name and button.pressed==True:
         ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
         x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)]
@@ -507,6 +512,7 @@ class xctrltf:
             self.xtouch.GetButton('Alt').SetLED(True)
         else:
             self.xtouch.GetButton('Alt').SetLED(False)
+        self.xtouch.GetButton('Write').SetLED(self.fader_offset == 0)
 
     def syncTF2XTouch (self):
         for i in range(32):
