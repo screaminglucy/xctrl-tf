@@ -515,6 +515,7 @@ class xctrltf:
         else:
             self.xtouch.GetButton('Alt').SetLED(False)
         self.xtouch.GetButton('Write').SetLED(self.fader_offset == 0)
+        self.xtouch.GetButton('Group').SetLED(False)
 
     def syncTF2XTouch (self):
         for i in range(32):
@@ -536,6 +537,7 @@ class xctrltf:
         self.t.getMainFaderValue()
         self.t.getMainFXFaderValue(0)
         self.t.getMainFXFaderValue(1)
+        self.t.getGlobalFxMute()
 
     def getChSelected (self):
         true_indices = [i for i, val in enumerate(self.fader_select_en) if val]
