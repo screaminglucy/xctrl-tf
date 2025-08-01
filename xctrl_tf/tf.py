@@ -289,6 +289,16 @@ class tf_rcp:
             fx = '2 '    
         cmd = 'set MIXER:Current/FxRtnCh/ToMix/On '+fx +str(self.solo_mix)+v
         self.send_command(cmd)
+        
+    def zeroFXSolo(self):
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level 0 '+ str(self.solo_mix)+' 0' 
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level 1 '+ str(self.solo_mix)+' 0' 
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level 2 '+ str(self.solo_mix)+' 0' 
+        self.send_command(cmd)
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/Level 3 '+ str(self.solo_mix)+' 0' 
+        self.send_command(cmd)
 
     def getFXSolo (self):
         cmd = 'get MIXER:Current/FxRtnCh/ToMix/On 0 ' +str(self.solo_mix)
@@ -362,6 +372,7 @@ class tf_rcp:
         self.send_command(cmd)
         for i in range(32):
             self.sendChannelSolo (i,0)
+        self.zeroFXSolo()
 
     def sendChannelSolo(self,channel,value):
         #enable channel on solo aux mix
