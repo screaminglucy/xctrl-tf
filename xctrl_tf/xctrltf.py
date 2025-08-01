@@ -436,8 +436,10 @@ def encoderChangeExt(index, direction):
         #update encoder
         if fx == 0:
             x2tf.xtouchext.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx1_sends[chan]))
+            x2tf.xtouch.GetButton('Marker').BlinkLED()
         else:
             x2tf.xtouchext.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx2_sends[chan]))
+            x2tf.xtouch.GetButton('Nudge').BlinkLED()
        
 
 
