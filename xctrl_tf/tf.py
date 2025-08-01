@@ -171,7 +171,7 @@ class tf_rcp:
             else:
                 logger.info(f"Dropped connection from {self.host}")
                 if self.onTFdisconnected:
-                    onTFdisconnected()
+                    self.onTFdisconnected()
             threading.Timer(1, self.SendKeepAlive).start()
             if self.lastMsgTime is not None:
                 if ((time.time() - self.lastMsgTime) > timeout) and self._active:
