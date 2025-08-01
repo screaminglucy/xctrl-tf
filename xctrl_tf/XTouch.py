@@ -255,6 +255,12 @@ class XTouch:
 
     def SendSlider(self, index, value):
         if self.usb_enabled:
+            if value > 8192:
+                logger.warning ("value too large setting to 8192")
+                value = 8192
+            if value < -8192:
+                logger.warning ('value too small setting to -8192')
+                value = -8192
             msg = mido.Message('pitchwheel', channel=index, pitch=value)
             self.sendRawMsg(msg)
         else:
