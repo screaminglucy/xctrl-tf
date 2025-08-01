@@ -120,6 +120,7 @@ class tf_rcp:
         self.onMainFXFaderValueRcv = None
         self.onFXSendEnValueRcv = None
         self.onFaderIconRcv = None
+        self.onTFdisconnected = None
         self.onChannelMasterMute = None
         self.connect()
 
@@ -169,6 +170,8 @@ class tf_rcp:
                 self.send_command("devstatus runmode")
             else:
                 logger.info(f"Dropped connection from {self.host}")
+                if self.onTFdisconnected:
+                    onTFdisconnected()
             threading.Timer(1, self.SendKeepAlive).start()
             if self.lastMsgTime is not None:
                 if ((time.time() - self.lastMsgTime) > timeout) and self._active:

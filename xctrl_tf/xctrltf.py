@@ -441,7 +441,8 @@ def encoderChangeExt(index, direction):
             x2tf.xtouchext.channels[index].SetEncoderValue(x2tf.dbToEncoder(x2tf.fx2_sends[chan]))
             x2tf.xtouch.GetButton('Nudge').BlinkLED()
        
-
+def onTFdisconnected():
+    x2tf.updateDisplay()
 
 class xctrltf:
     def __init__(self, tf_ip='192.168.10.10'):
@@ -460,6 +461,7 @@ class xctrltf:
         self.xtouchext.setOnEncoderChange(encoderChangeExt)
         self.xtouchext.setOnSliderChange(updateTFFaderExt)
         self.t.setOnChMeterRcv(chMeterRcv)
+        self.t.onTFdisconnected = onTFdisconnected
         self.t.onFaderValueRcv = onFaderValueRcv
         self.t.onMainFaderValueRcv = onMainFaderValueRcv
         self.t.onFaderColorRcv = onFaderColorRcv
@@ -655,6 +657,7 @@ class xctrltf:
         if self.t._active == False:
             for i in range(8):
                 self.xtouch.SendScribble(i, 'Discon', 'nected', 1, False)
+                self.xtouchext.SendScribble(i,'Discon','nected', 1, False)
         else:
             if self.main_fader_rev == False:
                 maindb = tf.fader_value_to_db(self.main_fader_value)
