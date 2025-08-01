@@ -373,6 +373,8 @@ class tf_rcp:
         for i in range(32):
             self.sendChannelSolo (i,0)
         self.zeroFXSolo()
+        self.sendFXSolo(1,False)
+        self.sendFXSolo(2,False)
 
     def sendChannelSolo(self,channel,value):
         #enable channel on solo aux mix
