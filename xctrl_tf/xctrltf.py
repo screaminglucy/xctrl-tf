@@ -145,7 +145,7 @@ def buttonPress (button):
         x2tf.t.sendChannelMute(x2tf.xtouchChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
         button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
         x2tf.updateDisplay()
-    if 'Solo' in button.name and button.pressed==True:
+    if 'Solo' in button.name and button.pressed==True and button.name != 'Solo':
         ch = int(button.name.replace('Ch','').replace('Solo','')) - 1
         x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
         val = x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
@@ -155,6 +155,18 @@ def buttonPress (button):
             button.SetLED(bool(val))
         else:
             button.BlinkLED()
+        x2tf.updateDisplay()
+    if 'Shift' == button.name and button.pressed == True:
+        x2tf.fx_solo[0] = not x2tf.fx_solo[0]
+        val = x2tf.fx_solo[0] 
+        x2tf.t.sendFXSolo (1,val)
+        button.SetLED(bool(val))
+        x2tf.updateDisplay()
+    if 'Option' == button.name and button.pressed == True:
+        x2tf.fx_solo[1] = not x2tf.fx_solo[1]
+        val = x2tf.fx_solo[1] 
+        x2tf.t.sendFXSolo (2,val)
+        button.SetLED(bool(val))
         x2tf.updateDisplay()
     if 'Drop' in button.name and button.pressed==True:
         x2tf.mute_first_bank = not x2tf.mute_first_bank
@@ -286,6 +298,12 @@ def onMixFXEn(fx,on):
         x2tf.fx1_mix_en = on
     if fx == 2:
         x2tf.fx2_mix_en = on
+
+def onMixFXSoloEn (fx,on):
+    if fx == 1:
+        x2tf.fx_solo[0] = on
+    if fx == 2:
+        x2tf.fx_solo[1] = on
 
 def buttonPressExt (button):
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
@@ -476,6 +494,7 @@ class xctrltf:
         self.t.onChannelMasterMute = onChannelMasterMute
         self.t.onChannelSolo = onChannelSolo
         self.t.onChannelMasterFXEn = onChannelMasterFXEn
+        self.t.onMixFXSoloEn = onMixFXSoloEn
         self.fader_select_en = [False] * 40
         self.mute_first_bank = False
         self.fx1_sends = [-120] * 40
@@ -506,6 +525,7 @@ class xctrltf:
         self.main_rev_fader_value = [0] * 2
         self.ch_mutes = [False]*40
         self.ch_solos = [False]*40
+        self.fx_solo = [False]*2
         self.ch_master_mutes = [False] * 40
         self.ch_custom_map = list(range(40)) 
         self.color_order = [2,5,7,6,3,1,4,0]
@@ -540,6 +560,7 @@ class xctrltf:
         self.t.getMainFXFaderValue(0)
         self.t.getMainFXFaderValue(1)
         self.t.getGlobalFxMute()
+        self.t.getFXSolo()
 
     def getChSelected (self):
         true_indices = [i for i, val in enumerate(self.fader_select_en) if val]
@@ -800,6 +821,8 @@ class xctrltf:
                 self.xtouch.GetButton('Nudge').BlinkLED()
             else:
                 self.xtouch.GetButton('Nudge').SetLED(False)
+            self.xtouch.GetButton('Shift').SetLED(self.fx_solo[0])
+            self.xtouch.GetButton('Option').SetLED(self.fx_solo[1])
             
 
     def periodicDisplayRefresh(self):

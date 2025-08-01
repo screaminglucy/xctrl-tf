@@ -122,6 +122,7 @@ class tf_rcp:
         self.onFaderIconRcv = None
         self.onTFdisconnected = None
         self.onChannelMasterMute = None
+        self.onMixFXSoloEn = None
         self.connect()
 
     def connect(self):
@@ -275,6 +276,24 @@ class tf_rcp:
             cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 0 ' + str(value) 
         else:
             cmd = 'set MIXER:Current/InCh/ToFx/Level '+ str(channel)+ ' 1 ' + str(value) 
+        self.send_command(cmd)
+
+    def sendFXSolo (self, fx, on):
+        if on:
+            v = ' 1'
+        else:
+            v = ' 0'
+        if fx == 1:
+            fx = '0 '
+        elif fx == 2:
+            fx = '2 '    
+        cmd = 'set MIXER:Current/FxRtnCh/ToMix/On '+fx +str(self.solo_mix)+v
+        self.send_command(cmd)
+
+    def getFXSolo (self):
+        cmd = 'get MIXER:Current/FxRtnCh/ToMix/On 0 ' +str(self.solo_mix)
+        self.send_command(cmd)
+        cmd = 'get MIXER:Current/FxRtnCh/ToMix/On 2 '+str(self.solo_mix)
         self.send_command(cmd)
 
     def sendFX2SendEnable (self, channel, on):
@@ -499,6 +518,8 @@ class tf_rcp:
                                     fx = 1
                                 if self.onMixFXEn and (( self.mix == mix or (self.mix-1 == mix and self.mixStereo)) ):
                                     self.onMixFXEn(fx,value)
+                                if self.onMixFXSoloEn and ( self.solo_mix == mix ):
+                                    self.onMixFXSoloEn(fx,value)
                             elif ((messageString.startswith('OK get MIXER:Current/InCh/ToMix/On ') or messageString.startswith('NOTIFY set MIXER:Current/InCh/ToMix/On ')) and self.mix != 0) :
                                 logger.debug(messageString)
                                 chan = int(messageString.split(' ')[3])
