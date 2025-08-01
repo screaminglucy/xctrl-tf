@@ -97,7 +97,7 @@ def buttonPress (button):
     blink_names_fx2 = ['F1','F2','F3','F4','F5','F6','F7','F8']
     logger.info('%s (%d) %s' % (button.name, button.index, 'pressed' if button.pressed else 'released'))
     if 'Mute' not in button.name and 'Group' not in button.name and 'Control' not in button.name and 'Sel' not in button.name and 'Global' not in button.name and 'Flip' not in button.name and 'Drop' not in button.name and 'Solo' not in button.name \
-        and 'F1' != button.name and 'F2' != button.name and 'F3' !=  button.name and 'F4' !=  button.name and 'F5' !=  button.name and 'F6' !=  button.name and 'F7' !=  button.name and 'F8' !=  button.name \
+        and 'F1' != button.name and 'F2' != button.name and 'F3' !=  button.name and 'F4' !=  button.name and 'F5' !=  button.name and 'F6' !=  button.name and 'F7' !=  button.name and 'F8' !=  button.name and 'Shift' != button.name and 'Option' != button.name \
         and 'MIDITracks' != button.name and 'Inputs' != button.name and 'AudioTracks' != button.name and 'Aux' != button.name and 'Buses' != button.name and 'Outputs' != button.name and 'User' != button.name and 'Nudge' != button.name and 'Marker' != button.name:
         button.SetLED(button.pressed)
     if button.name == 'BankRight' and button.pressed:
@@ -161,13 +161,11 @@ def buttonPress (button):
         val = x2tf.fx_solo[0] 
         x2tf.t.sendFXSolo (1,val)
         button.SetLED(bool(val))
-        x2tf.updateDisplay()
     if 'Option' == button.name and button.pressed == True:
         x2tf.fx_solo[1] = not x2tf.fx_solo[1]
         val = x2tf.fx_solo[1] 
         x2tf.t.sendFXSolo (2,val)
         button.SetLED(bool(val))
-        x2tf.updateDisplay()
     if 'Drop' in button.name and button.pressed==True:
         x2tf.mute_first_bank = not x2tf.mute_first_bank
         button.SetLED(x2tf.mute_first_bank)
