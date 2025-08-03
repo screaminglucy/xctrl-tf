@@ -16,15 +16,20 @@ FADER_TIMEOUT = 2
 def updateTFFader (index,value):
     db = x2tf.xtouch.fader_value_to_db(value)
     if index <= 7:
-        chan = x2tf.xtouchChToTFCh(index)
-        x2tf.fader_values[chan] = db * 100
-        x2tf.t.sendFaderValue(chan,db)
-    if index == 8: #main fader
-        if x2tf.main_fader_rev == False:
-            x2tf.t.sendMainFaderValue(db)
+        if x2tf.drum_fader_bank == False:
+            chan = x2tf.xtouchChToTFCh(index)
+            x2tf.fader_values[chan] = db * 100
+            x2tf.t.sendFaderValue(chan,db)
         else:
-            x2tf.t.sendMainFXFaderValue(db,x2tf.fx_select)
-        x2tf.main_fader_value = db * 100
+            if self.drum_mixer is not None:
+                self.drum_mixer.strip[index].mix.fader = db
+    if index == 8: #main fader
+        if x2tf.drum_fader_bank == False:
+            if x2tf.main_fader_rev == False:
+                x2tf.t.sendMainFaderValue(db)
+            else:
+                x2tf.t.sendMainFXFaderValue(db,x2tf.fx_select)
+            x2tf.main_fader_value = db * 100
 
 def updateTFFaderExt (index,value):
     logger.debug ("updateTFFaderExt "+str(index)+ " "+str(value))
@@ -105,32 +110,40 @@ def buttonPress (button):
             x2tf.fader_offset += 8
             if x2tf.fader_offset > 24:
                 x2tf.fader_offset = 24
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
         else:
             x2tf.fader_offset = 0
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
         if x2tf.fader_offset <= 23:
             x2tf.fader_offset += 1
+            x2tf.drum_fader_bank = False
             x2tf.updateDisplay()
     if button.name == 'ChannelLeft' and button.pressed:
         if x2tf.fader_offset >= 1:
             x2tf.fader_offset -= 1
+            x2tf.drum_fader_bank = False
             x2tf.updateDisplay()
     if button.name == 'Write' and button.pressed:
         x2tf.fader_offset = 0
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'Trim' and button.pressed:
         x2tf.fader_offset = 8
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'Save' and button.pressed:
         x2tf.fader_offset = 16
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'Undo' and button.pressed:
         x2tf.fader_offset = 24
+        x2tf.drum_fader_bank = False
         x2tf.updateDisplay()
     if button.name == 'Scrub' and button.pressed==False:
         x2tf.syncTF2XTouch()
@@ -140,22 +153,24 @@ def buttonPress (button):
     x2tf.xtouch.GetButton('Save').SetLED(x2tf.fader_offset == 16)
     x2tf.xtouch.GetButton('Undo').SetLED(x2tf.fader_offset == 24)
     if 'Mute' in button.name and button.pressed==True:
-        ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
-        x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)]
-        x2tf.t.sendChannelMute(x2tf.xtouchChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
-        button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
-        x2tf.updateDisplay()
+        if x2tf.drum_fader_bank == False:
+            ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
+            x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)]
+            x2tf.t.sendChannelMute(x2tf.xtouchChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
+            button.SetLED(x2tf.ch_mutes[x2tf.xtouchChToTFCh(ch)])
+            x2tf.updateDisplay()
     if 'Solo' in button.name and button.pressed==True and button.name != 'Solo':
-        ch = int(button.name.replace('Ch','').replace('Solo','')) - 1
-        x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
-        val = x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
-        x2tf.t.sendChannelSolo(x2tf.xtouchChToTFCh(ch),val)
-        val = x2tf.getSoloOn(ch)        
-        if val == 0 or val == 1:
-            button.SetLED(bool(val))
-        else:
-            button.BlinkLED()
-        x2tf.updateDisplay()
+        if x2tf.drum_fader_bank == False:
+            ch = int(button.name.replace('Ch','').replace('Solo','')) - 1
+            x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)] = not x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
+            val = x2tf.ch_solos[x2tf.xtouchChToTFCh(ch)]
+            x2tf.t.sendChannelSolo(x2tf.xtouchChToTFCh(ch),val)
+            val = x2tf.getSoloOn(ch)        
+            if val == 0 or val == 1:
+                button.SetLED(bool(val))
+            else:
+                button.BlinkLED()
+            x2tf.updateDisplay()
     if 'Shift' == button.name and button.pressed == True:
         x2tf.fx_solo[0] = not x2tf.fx_solo[0]
         val = x2tf.fx_solo[0] 
@@ -178,10 +193,11 @@ def buttonPress (button):
             x2tf.t.sendChannelMute(i,x2tf.ch_mutes[i])
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
-        ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
-        x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] 
-        button.SetLED(x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)])
-        x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
+        if x2tf.drum_fader_bank == False:
+            ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
+            x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)] 
+            button.SetLED(x2tf.fader_select_en[x2tf.xtouchChToTFCh(ch)])
+            x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
     if button.name == 'Cancel' and button.pressed==False:
         x2tf.fader_select_en = [False] * 40
         x2tf.updateDisplay()
@@ -212,69 +228,71 @@ def buttonPress (button):
        x2tf.main_fader_rev = not x2tf.main_fader_rev
        button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
-    if 'Touch' in button.name:
+    if 'Touch' in button.name and button.name != "Touch":
         if button.name != "MainTouch":
             ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
             x2tf.xtouch_fader_in_use[ch] = button.pressed
         else:
-            ch = 8
-            x2tf.xtouch_fader_in_use[ch] = button.pressed
-            if x2tf.main_fader_rev:
-                if x2tf.fx_select == 0 and button.pressed == True:
-                    for b in blink_names_fx1:
-                        x2tf.xtouch.GetButton(b).BlinkLED()
-                if x2tf.fx_select == 1 and button.pressed == True:
-                    for b in blink_names_fx2:
-                        x2tf.xtouch.GetButton(b).BlinkLED()
+            if x2tf.drum_fader_bank == False:
+                ch = 8
+                x2tf.xtouch_fader_in_use[ch] = button.pressed
+                if x2tf.main_fader_rev:
+                    if x2tf.fx_select == 0 and button.pressed == True:
+                        for b in blink_names_fx1:
+                            x2tf.xtouch.GetButton(b).BlinkLED()
+                    if x2tf.fx_select == 1 and button.pressed == True:
+                        for b in blink_names_fx2:
+                            x2tf.xtouch.GetButton(b).BlinkLED()
         x2tf.xtouch_fader_in_use_timeout[ch] = time.time()
-    if 'F1' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(0)
-        fx_enable_button(button, ch, 2)
-    if 'F2' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(1)
-        fx_enable_button(button, ch, 2)
-    if 'F3' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(2)
-        fx_enable_button(button, ch, 2)
-    if 'F4' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(3)
-        fx_enable_button(button, ch, 2)
-    if 'F5' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(4)
-        fx_enable_button(button, ch, 2)
-    if 'F6' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(5)
-        fx_enable_button(button, ch, 2)
-    if 'F7' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(6)
-        fx_enable_button(button, ch, 2)
-    if 'F8' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(7)
-        fx_enable_button(button, ch, 2)
-    if 'MIDITracks' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(0)
-        fx_enable_button(button, ch, 1)
-    if 'Inputs' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(1)
-        fx_enable_button(button, ch, 1)
-    if 'AudioTracks' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(2)
-        fx_enable_button(button, ch, 1)
-    if 'AudioInst' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(3)
-        fx_enable_button(button, ch, 1)
-    if 'Aux' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(4)
-        fx_enable_button(button, ch, 1)
-    if 'Buses' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(5)
-        fx_enable_button(button, ch, 1)
-    if 'Outputs' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(6)
-        fx_enable_button(button, ch, 1)
-    if 'User' == button.name and button.pressed == True:
-        ch = x2tf.xtouchChToTFCh(7)
-        fx_enable_button(button, ch, 1)
+    if x2tf.drum_fader_bank == False:
+        if 'F1' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(0)
+            fx_enable_button(button, ch, 2)
+        if 'F2' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(1)
+            fx_enable_button(button, ch, 2)
+        if 'F3' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(2)
+            fx_enable_button(button, ch, 2)
+        if 'F4' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(3)
+            fx_enable_button(button, ch, 2)
+        if 'F5' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(4)
+            fx_enable_button(button, ch, 2)
+        if 'F6' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(5)
+            fx_enable_button(button, ch, 2)
+        if 'F7' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(6)
+            fx_enable_button(button, ch, 2)
+        if 'F8' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(7)
+            fx_enable_button(button, ch, 2)
+        if 'MIDITracks' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(0)
+            fx_enable_button(button, ch, 1)
+        if 'Inputs' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(1)
+            fx_enable_button(button, ch, 1)
+        if 'AudioTracks' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(2)
+            fx_enable_button(button, ch, 1)
+        if 'AudioInst' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(3)
+            fx_enable_button(button, ch, 1)
+        if 'Aux' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(4)
+            fx_enable_button(button, ch, 1)
+        if 'Buses' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(5)
+            fx_enable_button(button, ch, 1)
+        if 'Outputs' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(6)
+            fx_enable_button(button, ch, 1)
+        if 'User' == button.name and button.pressed == True:
+            ch = x2tf.xtouchChToTFCh(7)
+            fx_enable_button(button, ch, 1)
     if 'Marker' == button.name and button.pressed == True:
         x2tf.fx1_mix_en = not x2tf.fx1_mix_en
         x2tf.t.sendMixFXEn( x2tf.fx1_mix_en,1)
@@ -283,6 +301,8 @@ def buttonPress (button):
         x2tf.fx2_mix_en = not x2tf.fx2_mix_en
         x2tf.t.sendMixFXEn( x2tf.fx2_mix_en,2)
         button.SetLED(x2tf.fx2_mix_en)
+    if 'Read' == button.name and button.pressed == True:
+        x2tf.connect_xair ()
     
 
 def onChannelMasterFXEn(fx, on):
@@ -387,7 +407,7 @@ def encoderChange(index, direction):
     blink_names_fx1 = ['MIDITracks','Inputs','AudioTracks','AudioInst','Aux','Buses','Outputs','User']
     global last_encoder_time
     logger.debug ("encoder change "+str(index)+" "+str(direction))
-    if (index < 8):
+    if (index < 8) and x2tf.drum_fader_bank == False:
         chan = x2tf.xtouchChToTFCh(index)
         fx = x2tf.chooseFX(chan)
         if fx == 0:
@@ -469,6 +489,8 @@ class xctrltf:
         self.xtouch = XTouch.XTouch()
         self.xtouchext =  XTouch.XTouch(use_extender=True) #xtouchextender.XTouchExt()
         self.connected = False
+        self.drum_mixer = None
+        self.drum_fader_bank = False
         self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
@@ -537,6 +559,45 @@ class xctrltf:
         self.xtouch.GetButton('Write').SetLED(self.fader_offset == 0)
         self.xtouch.GetButton('Group').SetLED(False)
 
+    def connect_xair (self):
+        try:
+            import xair_api
+            if self.drum_mixer is None:
+                self.drum_mixer = xair_api.connect('XR16', ip='192.168.10.20', connect_timeout=2) 
+                logger.info ("Attempting connection to 192.168.10.20")
+                self.drum_mixer.validate_connection()
+            self.xtouch.SendScribble(0, self.drum_mixer.strip[0].config.name, "1", 3, False)
+            self.xtouch.SendScribble(1, self.drum_mixer.strip[1].config.name, "2", 3, False)
+            self.xtouch.SendScribble(2, self.drum_mixer.strip[2].config.name, "3", 3, False)
+            self.xtouch.SendScribble(3, self.drum_mixer.strip[3].config.name, "4", 3, False)
+            self.xtouch.SendScribble(4, self.drum_mixer.strip[4].config.name, "5", 3, False)
+            self.xtouch.SendScribble(5, self.drum_mixer.strip[5].config.name, "6", 3, False)
+            self.xtouch.SendScribble(6, self.drum_mixer.strip[6].config.name, "7", 3, False)
+            self.xtouch.SendScribble(7, self.drum_mixer.strip[7].config.name, "8", 3, False)
+            self.xtouch.SendSlider(0,self.xtouch.fader_db_to_value(self.drum_mixer.strip[0].mix.fader))
+            self.xtouch.SendSlider(1,self.xtouch.fader_db_to_value(self.drum_mixer.strip[1].mix.fader))
+            self.xtouch.SendSlider(2,self.xtouch.fader_db_to_value(self.drum_mixer.strip[2].mix.fader))
+            self.xtouch.SendSlider(3,self.xtouch.fader_db_to_value(self.drum_mixer.strip[3].mix.fader))
+            self.xtouch.SendSlider(4,self.xtouch.fader_db_to_value(self.drum_mixer.strip[4].mix.fader))
+            self.xtouch.SendSlider(5,self.xtouch.fader_db_to_value(self.drum_mixer.strip[5].mix.fader))
+            self.xtouch.SendSlider(6,self.xtouch.fader_db_to_value(self.drum_mixer.strip[6].mix.fader))
+            self.xtouch.SendSlider(7,self.xtouch.fader_db_to_value(self.drum_mixer.strip[7].mix.fader))
+            self.drum_fader_bank = True
+            logger.info ("switching to drum fader bank")
+            for i in range (8):
+                ch = i+1
+                self.xtouch.GetButton('Ch'+str(ch)+'Mute').SetLED(False)
+                self.xtouch.GetButton('Ch'+str(ch)+'Solo').SetLED(False)
+                self.xtouch.GetButton('Ch'+str(ch)+'Rec').SetLED(False)
+                self.xtouch.GetButton('Ch'+str(ch)+'Sel').SetLED(False)
+        except Exception as e:      
+            logger.error('Failed to connect to xair mixer: %s', repr(e))
+            self.drum_fader_bank = False
+            self.pendingDisplayUpdate = True
+            self.drum_mixer = None
+
+
+   
     def syncTF2XTouch(self):
         _thread.start_new_thread(self.syncTF2XTouch_thread, ())
 
@@ -703,7 +764,8 @@ class xctrltf:
                 v = self.xtouch.fader_db_to_value(db)
                 vext = self.xtouchext.fader_db_to_value(dbExt)
                 if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
-                    self.xtouch.SendSlider(i,v)
+                    if self.drum_fader_bank == False:
+                        self.xtouch.SendSlider(i,v)
                 if self.xtouchext_fader_in_use[i] == False and (time.time() - self.xtouchext_fader_in_use_timeout[i] > FADER_TIMEOUT):
                     self.xtouchext.SendSlider(i,vext)
                 name = self.fader_names[chan][0:6]
@@ -717,44 +779,47 @@ class xctrltf:
                 color = self.fader_colors[chan]
                 colorExt = self.fader_colors[extChan]
                 logger.debug ("index "+str(i)+' name:'+name+' chan '+channelno+' color '+str(color))
-                self.xtouch.SendScribble(i, name, channelno, color, False)
+                if self.drum_fader_bank == False:
+                    self.xtouch.SendScribble(i, name, channelno, color, False)
                 self.xtouchext.SendScribble(i, nameExt, channelnoExt, colorExt, False)
                 #choose fx index
                 fx = self.chooseFX(chan)
                 fxExt = self.chooseFX(extChan)
                 #update encoder
-                if fx == 0:
-                    self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
-                else:
-                    self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
+                if self.drum_fader_bank == False:
+                    if fx == 0:
+                        self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[chan]))
+                    else:
+                        self.xtouch.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[chan]))
                 if fxExt == 0:
                     self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx1_sends[extChan]))
                 else:
                     self.xtouchext.channels[i].SetEncoderValue(self.dbToEncoder(self.fx2_sends[extChan]))
-            self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(0)])
-            self.xtouch.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(1)])
-            self.xtouch.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(2)])
-            self.xtouch.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(3)])
-            self.xtouch.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(4)])
-            self.xtouch.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(5)])
-            self.xtouch.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(6)])
-            self.xtouch.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(7)])
-            self.xtouch.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(0)])
-            self.xtouch.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(1)])
-            self.xtouch.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(2)])
-            self.xtouch.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(3)])
-            self.xtouch.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(4)])
-            self.xtouch.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(5)])
-            self.xtouch.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(6)])
-            self.xtouch.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(7)])
-            self.xtouch.GetButton('Ch1Rec').SetLED(self.getChannelOn(0))
-            self.xtouch.GetButton('Ch2Rec').SetLED(self.getChannelOn(1))
-            self.xtouch.GetButton('Ch3Rec').SetLED(self.getChannelOn(2))
-            self.xtouch.GetButton('Ch4Rec').SetLED(self.getChannelOn(3))
-            self.xtouch.GetButton('Ch5Rec').SetLED(self.getChannelOn(4))
-            self.xtouch.GetButton('Ch6Rec').SetLED(self.getChannelOn(5))
-            self.xtouch.GetButton('Ch7Rec').SetLED(self.getChannelOn(6))
-            self.xtouch.GetButton('Ch8Rec').SetLED(self.getChannelOn(7))
+            if self.drum_fader_bank == False:
+                self.xtouch.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(0)])
+                self.xtouch.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(1)])
+                self.xtouch.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(2)])
+                self.xtouch.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(3)])
+                self.xtouch.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(4)])
+                self.xtouch.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(5)])
+                self.xtouch.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(6)])
+                self.xtouch.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.xtouchChToTFCh(7)])
+                self.xtouch.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(0)])
+                self.xtouch.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(1)])
+                self.xtouch.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(2)])
+                self.xtouch.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(3)])
+                self.xtouch.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(4)])
+                self.xtouch.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(5)])
+                self.xtouch.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(6)])
+                self.xtouch.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchChToTFCh(7)])
+                self.xtouch.GetButton('Ch1Rec').SetLED(self.getChannelOn(0))
+                self.xtouch.GetButton('Ch2Rec').SetLED(self.getChannelOn(1))
+                self.xtouch.GetButton('Ch3Rec').SetLED(self.getChannelOn(2))
+                self.xtouch.GetButton('Ch4Rec').SetLED(self.getChannelOn(3))
+                self.xtouch.GetButton('Ch5Rec').SetLED(self.getChannelOn(4))
+                self.xtouch.GetButton('Ch6Rec').SetLED(self.getChannelOn(5))
+                self.xtouch.GetButton('Ch7Rec').SetLED(self.getChannelOn(6))
+                self.xtouch.GetButton('Ch8Rec').SetLED(self.getChannelOn(7))
             self.xtouch.GetButton('MIDITracks').SetLED(self.fx1_send_en[self.xtouchChToTFCh(0)])
             self.xtouch.GetButton('Inputs').SetLED(self.fx1_send_en[self.xtouchChToTFCh(1)])
             self.xtouch.GetButton('AudioTracks').SetLED(self.fx1_send_en[self.xtouchChToTFCh(2)])
@@ -771,14 +836,15 @@ class xctrltf:
             self.xtouch.GetButton('F6').SetLED(self.fx2_send_en[self.xtouchChToTFCh(5)])
             self.xtouch.GetButton('F7').SetLED(self.fx2_send_en[self.xtouchChToTFCh(6)])
             self.xtouch.GetButton('F8').SetLED(self.fx2_send_en[self.xtouchChToTFCh(7)])
-            for i in range(8):
-                name = "Ch" + str(i+1)+"Solo"
-                val = self.getSoloOn(i)
-                button = self.xtouch.GetButton(name)
-                if val == 0 or val == 1:
-                    button.SetLED(bool(val))
-                else:
-                    button.BlinkLED()
+            if self.drum_fader_bank == False:
+                for i in range(8):
+                    name = "Ch" + str(i+1)+"Solo"
+                    val = self.getSoloOn(i)
+                    button = self.xtouch.GetButton(name)
+                    if val == 0 or val == 1:
+                        button.SetLED(bool(val))
+                    else:
+                        button.BlinkLED()
             self.xtouchext.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(0)])
             self.xtouchext.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(1)])
             self.xtouchext.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(2)])
