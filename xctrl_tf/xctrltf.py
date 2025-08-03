@@ -591,7 +591,7 @@ class xctrltf:
                 if fc == c:
                     new_map.append(index)
         '''
-        new_map = [0,1,2,3,4,5,6,7, 8,9,10,11,12,13,14,15, 24,25,26,27,28,29,30,31, 16,17,18,19,20,21,22,23] #custom grouping
+        new_map = [0,1,2,3,4,5,6,7, 8,9,10,11,12,13,14,15, 24,25,26,27,28,29,30,31, 20,21,22,23,16,17,18,19] #custom grouping
         self.ch_custom_map = new_map
 
     def xtouchChToTFCh (self, fader_index):
