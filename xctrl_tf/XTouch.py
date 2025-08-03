@@ -131,15 +131,15 @@ class XTouch:
         self.onEncoderChange = callback
 
     def connect_usb(self):
-        logger.info ("Connect usb")
         in_port_name = self.usb_name
         out_port_name = self.usb_name
         try:
             ins = mido.get_input_names()
             outs = mido.get_output_names()
-            print ("ins "+str(ins))
-            print ("outs "+str(outs))
+            logger.info ("\nfound in ports "+str(ins))
+            logger.info ("found out ports "+str(outs)+'\n')
             if self.extender == False:
+                logger.info ("Connecting to main controller...")
                 for i in ins:
                     if self.usb_name in i and self.usb_extender_name not in i and 'MIDIIN' not in i and 'X-TOUCH_EXT' not in i:
                         in_port_name = i
@@ -147,12 +147,19 @@ class XTouch:
                     if self.usb_name in o and self.usb_extender_name not in o and 'MIDIOUT' not in o and 'X-TOUCH_EXT' not in o:
                         out_port_name = o
             else:
+                logger.info ("********Looking for extender...**********")
+                found = False
                 for i in ins:
                     if self.usb_extender_name in i:
                         in_port_name = i
+                        found = True
                 for o in outs:
                     if self.usb_extender_name in o:
                         out_port_name = o
+                        found = True
+                if not found:
+                    logger.warning ("extender not found")
+                    return False
             self.output_port = mido.open_output(out_port_name)
             self.input_port = mido.open_input(in_port_name)
             self.running = True
@@ -160,7 +167,7 @@ class XTouch:
             _thread.start_new_thread(self.getUSBMsg, ())
             _thread.start_new_thread(self.processOutgoingUSBPackets, ())
             self._active = True
-            logger.info("Midi connection opened. In:"+in_port_name+ " Out:"+out_port_name)
+            logger.info("Midi connection opened. \nIn:"+in_port_name+ " \nOut:"+out_port_name)
             return True
         except OSError as e:
             logger.error(f"Error opening MIDI port: {e}")
@@ -256,10 +263,10 @@ class XTouch:
     def SendSlider(self, index, value):
         if self.usb_enabled:
             if value >= 8192:
-                logger.warning (str(value)+" value too large setting to 8192")
+                logger.debug (str(value)+" value too large setting to 8191")
                 value = 8191
             if value <= -8192:
-                logger.warning (str(value)+' value too small setting to -8192')
+                logger.debug (str(value)+' value too small setting to -8191')
                 value = -8191
             msg = mido.Message('pitchwheel', channel=index, pitch=value)
             self.sendRawMsg(msg)
