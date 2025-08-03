@@ -578,7 +578,7 @@ class tf_rcp:
                 msg = self.outbound_q.get(block=False)
                 logger.debug ("sending "+str(msg))
                 self.sock.sendall(msg)
-                time.sleep(0.001)
+                time.sleep(0.01)
             except :
                 time.sleep(0.001)
 
