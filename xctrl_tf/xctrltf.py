@@ -582,8 +582,8 @@ class xctrltf:
         #    Cyan = 6 (skyblue)
         #    White = 7 (orange)
         #icons = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
-        logger.info ("fader icons")
-        logger.info (str(self.fader_icons))
+        logger.debug ("fader icons")
+        logger.debug (str(self.fader_icons))
         new_map = []
         '''
         for c in self.color_order:
