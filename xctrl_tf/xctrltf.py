@@ -537,28 +537,35 @@ class xctrltf:
         self.xtouch.GetButton('Write').SetLED(self.fader_offset == 0)
         self.xtouch.GetButton('Group').SetLED(False)
 
-    def syncTF2XTouch (self):
+    def syncTF2XTouch(self):
+        _thread.start_new_thread(self.syncTF2XTouch_thread, ())
+
+    def syncTF2XTouch_thread (self):
         for i in range(32):
             self.t.getFaderValue(i)
-            time.sleep(0.01)
             self.t.getFaderName(i)
-            time.sleep(0.01)
             self.t.getFaderColor(i)
-            time.sleep(0.01)
             self.t.getFaderIcon(i)
-            time.sleep(0.01)
+            while self.t.isQueueEmpty() == False:
+                time.sleep(0.01)
             self.t.getChannelOn(i)
-            time.sleep(0.02)
             self.t.getFX1Send(i)
-            time.sleep(0.01)
             self.t.getFX2Send(i)
-            time.sleep(0.01)
             self.t.getChannelSoloOn(i)
+            while self.t.isQueueEmpty() == False:
+                time.sleep(0.01)
+        while self.t.isQueueEmpty() == False:
+            time.sleep(0.01)
         self.t.getMainFaderValue()
         self.t.getMainFXFaderValue(0)
         self.t.getMainFXFaderValue(1)
+        while self.t.isQueueEmpty() == False:
+            time.sleep(0.01)
         self.t.getGlobalFxMute()
         self.t.getFXSolo()
+        while self.t.isQueueEmpty() == False:
+            time.sleep(0.01)
+        logger.info ("syncTF2XTouch()")
 
     def getChSelected (self):
         true_indices = [i for i, val in enumerate(self.fader_select_en) if val]
@@ -952,13 +959,13 @@ class xctrltf:
         except:
             if value == "Purple":
                 color = 5 #pink
-                logger.warning (value + " no color match using pink!")
+                logger.debug (value + " no color match using pink!")
             elif value == "SkyBlue":
                 color = 6 #cyan
-                logger.warning (value + " no color match using cyan!")
+                logger.debug (value + " no color match using cyan!")
             else:
                 color = 7
-                logger.warning (value + " no color match using white!")
+                logger.debug (value + " no color match using white!")
         if color == 0: #we dont want any "off"
             color = 7
         self.fader_colors[chan] = color
