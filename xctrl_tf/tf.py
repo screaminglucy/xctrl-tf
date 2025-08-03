@@ -372,9 +372,14 @@ class tf_rcp:
         self.send_command(cmd)
         for i in range(32):
             self.sendChannelSolo (i,0)
+            while self.isQueueEmpty() == False:
+                time.sleep(0.001)
         self.zeroFXSolo()
         self.sendFXSolo(1,False)
+        while self.isQueueEmpty() == False:
+            time.sleep(0.001)
         self.sendFXSolo(2,False)
+        logger.info ('enableSoloBus complete')
 
     def sendChannelSolo(self,channel,value):
         #enable channel on solo aux mix
