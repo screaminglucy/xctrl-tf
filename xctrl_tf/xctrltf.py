@@ -110,42 +110,43 @@ def buttonPress (button):
             x2tf.fader_offset += 8
             if x2tf.fader_offset > 24:
                 x2tf.fader_offset = 24
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'BankLeft' and button.pressed:
         if x2tf.fader_offset >= 8:
             x2tf.fader_offset -= 8
         else:
             x2tf.fader_offset = 0
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'ChannelRight' and button.pressed:
         if x2tf.fader_offset <= 23:
             x2tf.fader_offset += 1
-            x2tf.drum_fader_bank = False
             x2tf.updateDisplay()
+        x2tf.disconnect_xair()
     if button.name == 'ChannelLeft' and button.pressed:
         if x2tf.fader_offset >= 1:
             x2tf.fader_offset -= 1
-            x2tf.drum_fader_bank = False
             x2tf.updateDisplay()
+        x2tf.disconnect_xair()
     if button.name == 'Write' and button.pressed:
         x2tf.fader_offset = 0
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'Trim' and button.pressed:
         x2tf.fader_offset = 8
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'Save' and button.pressed:
         x2tf.fader_offset = 16
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'Undo' and button.pressed:
         x2tf.fader_offset = 24
-        x2tf.drum_fader_bank = False
+        x2tf.disconnect_xair()
         x2tf.updateDisplay()
     if button.name == 'Scrub' and button.pressed==False:
+        x2tf.disconnect_xair()
         x2tf.syncTF2XTouch()
         x2tf.updateDisplay()
     x2tf.xtouch.GetButton('Write').SetLED(x2tf.fader_offset == 0)
@@ -569,6 +570,7 @@ class xctrltf:
                 self.drum_mixer.worker = threading.Thread(target=self.drum_mixer.run_server, daemon=True)
                 self.drum_mixer.worker.start()
                 self.drum_mixer.validate_connection()
+            self.drum_fader_bank = True
             self.xtouch.SendScribble(0, self.drum_mixer.strip[0].config.name, "1", 3, False)
             self.xtouch.SendScribble(1, self.drum_mixer.strip[1].config.name, "2", 3, False)
             self.xtouch.SendScribble(2, self.drum_mixer.strip[2].config.name, "3", 3, False)
@@ -585,7 +587,6 @@ class xctrltf:
             self.xtouch.SendSlider(5,self.xtouch.fader_db_to_value(self.drum_mixer.strip[5].mix.fader))
             self.xtouch.SendSlider(6,self.xtouch.fader_db_to_value(self.drum_mixer.strip[6].mix.fader))
             self.xtouch.SendSlider(7,self.xtouch.fader_db_to_value(self.drum_mixer.strip[7].mix.fader))
-            self.drum_fader_bank = True
             logger.info ("switching to drum fader bank")
             for i in range (8):
                 ch = i+1
@@ -600,8 +601,15 @@ class xctrltf:
             self.drum_fader_bank = False
             self.pendingDisplayUpdate = True
             self.drum_mixer = None
-
-
+    
+    def disconnect_xair(self):
+        logger.info ("disconnect xair")
+        if self.drum_fader_bank:
+            self.drum_fader_bank = False
+            self.pendingDisplayUpdate = True
+        if self.drum_mixer is not None:
+            self.drum_mixer.server.shutdown()
+            self.drum_mixer = None
    
     def syncTF2XTouch(self):
         _thread.start_new_thread(self.syncTF2XTouch_thread, ())
@@ -1075,8 +1083,7 @@ class xctrltf:
         self.t.running = False
         self.xtouchext.running = False
         self.running = False
-        if self.drum_mixer is not None:
-            self.drum_mixer.server.shutdown()
+        self.disconnect_xair()
 
     
 
