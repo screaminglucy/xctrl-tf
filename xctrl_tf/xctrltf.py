@@ -562,9 +562,12 @@ class xctrltf:
     def connect_xair (self):
         try:
             import xair_api
+            import threading
             if self.drum_mixer is None:
                 self.drum_mixer = xair_api.connect('XR16', ip='192.168.10.20', connect_timeout=2) 
                 logger.info ("Attempting connection to 192.168.10.20")
+                self.drum_mixer.worker = threading.Thread(target=self.drum_mixer.run_server, daemon=True)
+                self.drum_mixer.worker.start()
                 self.drum_mixer.validate_connection()
             self.xtouch.SendScribble(0, self.drum_mixer.strip[0].config.name, "1", 3, False)
             self.xtouch.SendScribble(1, self.drum_mixer.strip[1].config.name, "2", 3, False)
@@ -592,6 +595,8 @@ class xctrltf:
                 self.xtouch.GetButton('Ch'+str(ch)+'Sel').SetLED(False)
         except Exception as e:      
             logger.error('Failed to connect to xair mixer: %s', repr(e))
+            if self.drum_mixer is not None:
+                self.drum_mixer.server.shutdown()
             self.drum_fader_bank = False
             self.pendingDisplayUpdate = True
             self.drum_mixer = None
@@ -1070,6 +1075,8 @@ class xctrltf:
         self.t.running = False
         self.xtouchext.running = False
         self.running = False
+        if self.drum_mixer is not None:
+            self.drum_mixer.server.shutdown()
 
     
 
