@@ -1,15 +1,15 @@
 # xctrl-tf
 
-This is python code to control a Yamaha TF mixer with a Behringer XTouch control surface in network XCtrl mode
+This is python code to control a Yamaha TF mixer with a Behringer XTouch control surface in network XCtrl mode or USB MCU mode.
 
-It also supports using an XTouch or XTouch extender in USB mackie control mode. 
+It also supports using an XTouch with XTouch extender in USB mackie control mode. 
 
 ### Quick start
 Set the IP addresses correctly inside xctrlpy.py and then run xctrltf.py.
 
 To run on Raspberry Pi:
 1. Create python venv `python -m venv .venv`
-2. Install mido and keyboard `.venv/bin/python -m pip install mido` `.venv/bin/python -m pip install keyboard`
+2. Install mido and rtmidi `.venv/bin/python -m pip install mido` `.venv/bin/python -m pip install python-rtmidi`
 3. Run: `.venv/bin/python xctrltf.py` If you get a warning about permissions: `sudo .venv/bin/python xctrltf.py` 
 
 ### To run automatically on Raspberry Pi:
