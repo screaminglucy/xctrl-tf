@@ -565,28 +565,20 @@ class xctrltf:
             import xair_api
             import threading
             if self.drum_mixer is None:
-                self.drum_mixer = xair_api.connect('XR16', ip='192.168.10.20', connect_timeout=2) 
+                self.drum_mixer = xair_api.connect('XR16', ip='192.168.10.20', delay=0.03, connect_timeout=2) 
                 logger.info ("Attempting connection to 192.168.10.20")
                 self.drum_mixer.worker = threading.Thread(target=self.drum_mixer.run_server, daemon=True)
                 self.drum_mixer.worker.start()
                 self.drum_mixer.validate_connection()
             self.drum_fader_bank = True
-            self.xtouch.SendScribble(0, self.drum_mixer.strip[0].config.name, "1", 3, False)
-            self.xtouch.SendScribble(1, self.drum_mixer.strip[1].config.name, "2", 3, False)
-            self.xtouch.SendScribble(2, self.drum_mixer.strip[2].config.name, "3", 3, False)
-            self.xtouch.SendScribble(3, self.drum_mixer.strip[3].config.name, "4", 3, False)
-            self.xtouch.SendScribble(4, self.drum_mixer.strip[4].config.name, "5", 3, False)
-            self.xtouch.SendScribble(5, self.drum_mixer.strip[5].config.name, "6", 3, False)
-            self.xtouch.SendScribble(6, self.drum_mixer.strip[6].config.name, "7", 3, False)
-            self.xtouch.SendScribble(7, self.drum_mixer.strip[7].config.name, "8", 3, False)
-            self.xtouch.SendSlider(0,self.xtouch.fader_db_to_value(self.drum_mixer.strip[0].mix.fader))
-            self.xtouch.SendSlider(1,self.xtouch.fader_db_to_value(self.drum_mixer.strip[1].mix.fader))
-            self.xtouch.SendSlider(2,self.xtouch.fader_db_to_value(self.drum_mixer.strip[2].mix.fader))
-            self.xtouch.SendSlider(3,self.xtouch.fader_db_to_value(self.drum_mixer.strip[3].mix.fader))
-            self.xtouch.SendSlider(4,self.xtouch.fader_db_to_value(self.drum_mixer.strip[4].mix.fader))
-            self.xtouch.SendSlider(5,self.xtouch.fader_db_to_value(self.drum_mixer.strip[5].mix.fader))
-            self.xtouch.SendSlider(6,self.xtouch.fader_db_to_value(self.drum_mixer.strip[6].mix.fader))
-            self.xtouch.SendSlider(7,self.xtouch.fader_db_to_value(self.drum_mixer.strip[7].mix.fader))
+            names = []
+            faders = []
+            for i in range(8): #get current values (only done once)
+                names.append(self.drum_mixer.strip[i].config.name)
+                faders.append(self.drum_mixer.strip[i].mix.fader)
+            for i in range(8):
+                self.xtouch.SendScribble(i, names[i], str(i+1), 3, False)
+                self.xtouch.SendSlider(i,self.xtouch.fader_db_to_value(faders[i]))
             logger.info ("switching to drum fader bank")
             for i in range (8):
                 ch = i+1
