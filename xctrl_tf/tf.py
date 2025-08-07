@@ -185,8 +185,8 @@ class tf_rcp:
             if self._active:
                 cmd = 'mtrstart MIXER:Current/InCh/PreHPF 400' #time interval
                 self.send_command(cmd)
-                cmd = 'mtrstart MIXER:Current/Mix/PreEQ 400' #time interval
-                self.send_command(cmd)
+                #cmd = 'mtrstart MIXER:Current/Mix/PreEQ 400' #time interval
+                #self.send_command(cmd)
             threading.Timer(10, self.Metering).start()
     
     def setOnChMeterRcv(self, callback):
