@@ -21,8 +21,8 @@ def updateTFFader (index,value):
             x2tf.fader_values[chan] = db * 100
             x2tf.t.sendFaderValue(chan,db)
         else:
-            if self.drum_mixer is not None:
-                self.drum_mixer.strip[index].mix.fader = db
+            if x2tf.drum_mixer is not None:
+                x2tf.drum_mixer.strip[index].mix.fader = db
     if index == 8: #main fader
         if x2tf.drum_fader_bank == False:
             if x2tf.main_fader_rev == False:
@@ -230,6 +230,7 @@ def buttonPress (button):
        button.SetLED(x2tf.main_fader_rev)
        x2tf.updateDisplay()
     if 'Touch' in button.name and button.name != "Touch":
+        ch = 8
         if button.name != "MainTouch":
             ch = int(button.name.replace('Ch','').replace('Touch','')) - 1
             x2tf.xtouch_fader_in_use[ch] = button.pressed
@@ -599,9 +600,9 @@ class xctrltf:
         if self.drum_fader_bank:
             self.drum_fader_bank = False
             self.pendingDisplayUpdate = True
-        if self.drum_mixer is not None:
-            self.drum_mixer.server.shutdown()
-            self.drum_mixer = None
+        #if self.drum_mixer is not None:
+        #    self.drum_mixer.server.shutdown()
+        #    self.drum_mixer = None
    
     def syncTF2XTouch(self):
         _thread.start_new_thread(self.syncTF2XTouch_thread, ())
