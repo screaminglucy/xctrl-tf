@@ -487,7 +487,8 @@ class xctrltf:
         self.map_by_color_en = False
         self.fx_select = 0
         self.pendingDisplayUpdate = True
-        self.tf = tf.tf_rcp(tf_ip)
+        self.tf = None
+        #self.tf = tf.tf_rcp(tf_ip)
         self.r = reaper.reaper()
         self.xtouch = XTouch.XTouch()
         self.xtouchext =  XTouch.XTouch(use_extender=True) #xtouchextender.XTouchExt()
@@ -501,30 +502,30 @@ class xctrltf:
         self.xtouchext.setOnButtonChange(buttonPressExt)
         self.xtouchext.setOnEncoderChange(encoderChangeExt)
         self.xtouchext.setOnSliderChange(updateTFFaderExt)
-        
-        self.tf.setOnChMeterRcv(chMeterRcv)
-        self.tf.onTFdisconnected = onTFdisconnected
-        '''
-        self.t.onFaderValueRcv = onFaderValueRcv
-        self.t.onMainFaderValueRcv = onMainFaderValueRcv
-        '''
-        self.tf.onFaderColorRcv = onFaderColorRcv
-        self.tf.onFaderNameRcv = onFaderNameRcv
-        '''
-        self.t.onFXSendValueRcv = onFXSendValueRcv
-        self.t.onGlobalMuteRcv = onGlobalMuteRcv
-        self.t.onMainFXFaderValueRcv = onMainFXFaderValueRcv
-        self.t.onChannelMute = onChannelMute
-        self.t.onFaderIconRcv = onFaderIconRcv
-        self.t.onMixFXEn = onMixFXEn
-        self.t.onFXSendEnValueRcv = onFXSendEnValueRcv
-        '''
-        self.tf.onChannelMasterMute = onChannelMasterMute
-        self.tf.onChannelSolo = onChannelSolo
-        '''
-        self.t.onChannelMasterFXEn = onChannelMasterFXEn
-        self.t.onMixFXSoloEn = onMixFXSoloEn
-        '''
+        if self.tf is not None:
+            self.tf.setOnChMeterRcv(chMeterRcv)
+            self.tf.onTFdisconnected = onTFdisconnected
+            '''
+            self.t.onFaderValueRcv = onFaderValueRcv
+            self.t.onMainFaderValueRcv = onMainFaderValueRcv
+            '''
+            self.tf.onFaderColorRcv = onFaderColorRcv
+            self.tf.onFaderNameRcv = onFaderNameRcv
+            '''
+            self.t.onFXSendValueRcv = onFXSendValueRcv
+            self.t.onGlobalMuteRcv = onGlobalMuteRcv
+            self.t.onMainFXFaderValueRcv = onMainFXFaderValueRcv
+            self.t.onChannelMute = onChannelMute
+            self.t.onFaderIconRcv = onFaderIconRcv
+            self.t.onMixFXEn = onMixFXEn
+            self.t.onFXSendEnValueRcv = onFXSendEnValueRcv
+            '''
+            self.tf.onChannelMasterMute = onChannelMasterMute
+            self.tf.onChannelSolo = onChannelSolo
+            '''
+            self.t.onChannelMasterFXEn = onChannelMasterFXEn
+            self.t.onMixFXSoloEn = onMixFXSoloEn
+            '''
         self.fader_select_en = [False] * 40
         self.mute_first_bank = False
         self.fx1_sends = [-120] * 40
