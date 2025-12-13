@@ -11,14 +11,13 @@ logging.basicConfig(level=logging.INFO)
 METER_HISTORY_LENGTH = 10
 FADER_TIMEOUT = 2
 
-
 #callbacks
-def updateTFFader (index,value):
+def updateReaperFader (index,value):
     db = x2tf.xtouch.fader_value_to_db(value)
     if index <= 7:
         if x2tf.drum_fader_bank == False:
             chan = x2tf.xtouchChToReaperCh(index)
-            x2tf.fader_values[chan] = db * 100
+            x2tf.fader_values[chan] = reaper.fader_db_to_value(db)
             x2tf.t.sendFaderValue(chan,db)
         else:
             if x2tf.drum_mixer is not None:
@@ -29,15 +28,15 @@ def updateTFFader (index,value):
                 x2tf.t.sendMainFaderValue(db)
             else:
                 x2tf.t.sendMainFXFaderValue(db,x2tf.fx_select)
-            x2tf.main_fader_value = db * 100
+            x2tf.main_fader_value = reaper.fader_db_to_value(db)
 
-def updateTFFaderExt (index,value):
-    logger.debug ("updateTFFaderExt "+str(index)+ " "+str(value))
+def updateReaperFaderExt (index,value):
+    logger.debug ("updateReaperFaderExt "+str(index)+ " "+str(value))
     db = x2tf.xtouchext.fader_value_to_db(value)
     if index <= 7:
         chan = x2tf.xtouchExtChToReaperCh(index)
-        x2tf.t.sendFaderValue(chan,db)
-        x2tf.fader_values[chan] = db * 100
+        x2tf.r.sendFaderValue(chan,db)
+        x2tf.fader_values[chan] = reaper.fader_db_to_value(db)
     
 def chMeterRcv (values):
     x2tf.update_ch_meters(values)
@@ -498,10 +497,10 @@ class xctrltf:
         self.wait_for_connect(skipXTouch=True)
         self.xtouch.setOnButtonChange(buttonPress)
         self.xtouch.setOnEncoderChange(encoderChange)
-        self.xtouch.setOnSliderChange(updateTFFader)
+        self.xtouch.setOnSliderChange(updateReaperFader)
         self.xtouchext.setOnButtonChange(buttonPressExt)
         self.xtouchext.setOnEncoderChange(encoderChangeExt)
-        self.xtouchext.setOnSliderChange(updateTFFaderExt)
+        self.xtouchext.setOnSliderChange(updateReaperFaderExt)
         if self.tf is not None:
             self.tf.setOnChMeterRcv(chMeterRcv)
             self.tf.onTFdisconnected = onTFdisconnected
@@ -550,10 +549,10 @@ class xctrltf:
         self.xtouch_fader_in_use_timeout = [time.time()]*9
         self.xtouchext_fader_in_use_timeout = [time.time()]*8
         self.fader_icons = ['none']*40
-        self.fader_values = [1000]*40
-        self.main_fader_value = 0
+        self.fader_values = [1.0]*40
+        self.main_fader_value = 0.0001
         self.main_fader_rev = False
-        self.main_rev_fader_value = [0] * 2
+        self.main_rev_fader_value = [0.0001] * 2
         self.ch_mutes = [False]*40
         self.ch_solos = [False]*40
         self.fx_solo = [False]*2
@@ -562,7 +561,7 @@ class xctrltf:
         self.color_order = [2,5,7,6,3,1,4,0]
         self.icon_order = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
         self.running = True
-        _thread.start_new_thread(self.periodicDisplayRefresh, ())
+        #_thread.start_new_thread(self.periodicDisplayRefresh, ())
         #if self.t.mix != 0:
         #    self.xtouch.GetButton('Alt').SetLED(True)
         #else:
@@ -761,6 +760,7 @@ class xctrltf:
                 self.xtouch.SendScribble(i, 'Discon', 'nected', 1, False)
                 self.xtouchext.SendScribble(i,'Discon','nected', 1, False)
         else:
+            logger.info ("updateDisplay()")
             if self.main_fader_rev == False:
                 maindb = reaper.fader_value_to_db(self.main_fader_value)
                 mainv = self.xtouch.fader_db_to_value(maindb)

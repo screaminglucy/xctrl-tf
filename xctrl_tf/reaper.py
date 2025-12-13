@@ -10,7 +10,7 @@ import math
 #reapy.print("Hello world!")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
+WAIT_TIME = 0.010
 
 def fader_db_to_value (gain_db): #1.0 = 0dB
     """Converts dB gain to linear amplitude/voltage gain ratio."""
@@ -25,18 +25,19 @@ def fader_value_to_db (gain_ratio):
         return float('-inf') 
     # Formula: dB = 20 * log10(gain_ratio)
     db = 20 * math.log10(gain_ratio)
-    logger.debug ("fader_value_to_db "+str(db))
+    logger.debug ("fader_value_to_db gain="+str(gain_ratio)+" db " +str(db))
     return db
 
 class reaper:
     def __init__(self):
         self.project = reapy.Project()
         self._active = True
+        self.lastSend = time.time()
 
     def getFaderName (self, channel):
         track = self.project.tracks[channel]
         name = track.name
-        logger.info ('track '+str(channel)+ " name "+name)
+        logger.debug ('track '+str(channel)+ " name "+name)
         return name
     
     def getFaderColor (self, channel):
@@ -62,6 +63,17 @@ class reaper:
         name = track.get_info_value("D_VOL")
         logger.debug ('track '+str(channel)+ " value "+str(name)) #1.0 = 0dB
         return name
+    
+    def sendFaderValue (self, channel, db):
+        logger.debug ("sendFaderValue()")
+        if (time.time() - self.lastSend) > WAIT_TIME:
+            logger.debug ('track '+str(channel)+ " value "+str(db)+"db") #1.0 = 0dB
+            track = self.project.tracks[channel]
+            v = fader_db_to_value(db)
+            track.set_info_value("D_VOL",v)
+            self.lastSend = time.time()
+
+        
 
     def getMainFaderValue (self):
         master = self.project.master_track
@@ -74,3 +86,5 @@ class reaper:
         master = self.project.master_track
         master.set_volume(v)
         logger.debug ('set master vol '+str(v))
+
+    
