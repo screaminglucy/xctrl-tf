@@ -52,6 +52,11 @@ class reaper:
         logger.debug ('track '+str(channel)+ " solo "+str(name))
         return name
     
+    def sendChannelMute (self, channel,mute):
+        track = self.project.tracks[channel]
+        track.is_muted = mute
+        logger.debug ('track '+str(channel)+ " mute "+str(mute))
+    
     def getChannelOn (self, channel):
         track = self.project.tracks[channel]
         name = track.is_muted
@@ -77,14 +82,14 @@ class reaper:
 
     def getMainFaderValue (self):
         master = self.project.master_track
-        volume = master.get_volume()
+        volume = master.get_info_value("D_VOL")
         logger.debug ('master vol '+str(volume)) #1.0 = 0dB
         return volume
 
     def sendMainFaderValue (self, db):
         v = fader_db_to_value(db) 
         master = self.project.master_track
-        master.set_volume(v)
+        master.set_info_value("D_VOL",v)
         logger.debug ('set master vol '+str(v))
 
     

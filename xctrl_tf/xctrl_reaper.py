@@ -331,7 +331,7 @@ def buttonPressExt (button):
     if 'Mute' in button.name and button.pressed==True:
         ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
         x2tf.ch_mutes[x2tf.xtouchExtChToReaperCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchExtChToReaperCh(ch)]
-        x2tf.t.sendChannelMute(x2tf.xtouchExtChToReaperCh(ch),x2tf.ch_mutes[x2tf.xtouchExtChToReaperCh(ch)])
+        x2tf.r.sendChannelMute(x2tf.xtouchExtChToReaperCh(ch),x2tf.ch_mutes[x2tf.xtouchExtChToReaperCh(ch)])
         button.SetLED(x2tf.ch_mutes[x2tf.xtouchExtChToReaperCh(ch)])
         x2tf.updateDisplay()
     if 'Solo' in button.name and button.pressed==True:
@@ -362,17 +362,18 @@ def buttonPressExt (button):
                     x2tf.ext_fader_offset+=8
                 if x2tf.ext_fader_offset > 24:
                     x2tf.ext_fader_offset = 24
-                x2tf.updateDisplay()
+                #x2tf.updateDisplay()
                 bank = True
             if ch == 0: #bank left
                 if x2tf.ext_fader_offset >= 8:
                     x2tf.ext_fader_offset -= 8
                 else:
                     x2tf.ext_fader_offset = 0
-                x2tf.updateDisplay()
+                #x2tf.updateDisplay()
                 bank = True
         if bank:
             x2tf.last_select_button_push_time[ch] = 0
+            x2tf.displayRefresh()
         else:
             x2tf.last_select_button_push_time[ch] = time.time()
     if 'Touch' in button.name:
@@ -481,7 +482,7 @@ def encoderChangeExt(index, direction):
 def onTFdisconnected():
     x2tf.updateDisplay()
 
-class xctrltf:
+class xctrlReaper:
     def __init__(self, tf_ip='192.168.10.10'):
         self.map_by_color_en = False
         self.fx_select = 0
@@ -561,6 +562,7 @@ class xctrltf:
         self.color_order = [2,5,7,6,3,1,4,0]
         self.icon_order = ['DynamicMic','A.Guitar','Keyboard','E.Guitar','E.Bass','Drumkit','Choir','Piano','Audience','PC','SpeechMic','WirelessMic']
         self.running = True
+        self.displayRefresh()
         #_thread.start_new_thread(self.periodicDisplayRefresh, ())
         #if self.t.mix != 0:
         #    self.xtouch.GetButton('Alt').SetLED(True)
@@ -964,6 +966,45 @@ class xctrltf:
                     wait_time = 1
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
+                    
+    def displayRefresh(self):
+            if self.connected:      
+                loop_start_time = time.time()
+                fader_in_use = any(self.xtouch_fader_in_use) or any(self.xtouchext_fader_in_use)
+                #while (self.t.isQueueEmpty() == False):
+                #    time.sleep(0.1)
+                for i in range(8):
+                    chan = self.xtouchChToReaperCh(i)
+                    if self.xtouch._active:
+                        if self.xtouch_fader_in_use[i] == False and (time.time() - self.xtouch_fader_in_use_timeout[i] > FADER_TIMEOUT):
+                            self.fader_values[chan] = self.r.getFaderValue(self.xtouchChToReaperCh(i))
+                        self.ch_mutes[chan] = ~self.r.getChannelOn(self.xtouchChToReaperCh(i))
+                        self.fader_names[chan] = self.r.getFaderName(self.xtouchChToReaperCh(i))
+                        #self.fader_colors[chan] = self.r.getFaderColor(self.xtouchChToReaperCh(i))     
+                        self.ch_solos[chan] = self.r.getChannelSoloOn(self.xtouchChToReaperCh(i))            
+                        #self.t.getFX1Send(self.xtouchChToReaperCh(i))
+                        #self.t.getFX2Send(self.xtouchChToReaperCh(i))
+                    chan = self.xtouchExtChToReaperCh(i)
+                    if self.xtouchext.running:
+                        if self.xtouchext_fader_in_use[i] == False and (time.time() - self.xtouchext_fader_in_use_timeout[i] > FADER_TIMEOUT):
+                            self.fader_values[chan] = self.r.getFaderValue(self.xtouchExtChToReaperCh(i))
+                        self.ch_mutes[chan] = ~self.r.getChannelOn(self.xtouchExtChToReaperCh(i))
+                        self.fader_names[chan] = self.r.getFaderName(self.xtouchExtChToReaperCh(i))
+                        #self.fader_colors[chan] = self.r.getFaderColor(self.xtouchExtChToReaperCh(i))     
+                        self.ch_solos[chan] = self.r.getChannelSoloOn(self.xtouchExtChToReaperCh(i))            
+                        #self.t.getFX1Send(self.xtouchExtChToReaperCh(i))
+                        #self.t.getFX2Send(self.xtouchExtChToReaperCh(i))
+                    #while (self.t.isQueueEmpty() == False):
+                        #time.sleep(0.1)
+                
+                if self.xtouch_fader_in_use[8] == False and (time.time() - self.xtouch_fader_in_use_timeout[8] > FADER_TIMEOUT): 
+                    self.main_fader_value = self.r.getMainFaderValue()
+                    #self.t.getMainFXFaderValue(0)
+                    #self.t.getMainFXFaderValue(1)
+                    
+                
+                self.updateDisplay() 
+                    
 
     def wait_for_connect (self, skipXTouch=False):
         if skipXTouch:
@@ -1104,7 +1145,7 @@ def on_key_event(event):
 
 keyboard.on_press(on_key_event)
 '''
-x2tf = xctrltf()
+x2tf = xctrlReaper()
 firstSync = True
 synced = False
 while running:
