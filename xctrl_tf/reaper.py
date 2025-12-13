@@ -64,13 +64,13 @@ class reaper:
         return name
 
     def getMainFaderValue (self):
-        master = project.master_track
+        master = self.project.master_track
         volume = master.get_volume()
         logger.debug ('master vol '+str(volume)) #1.0 = 0dB
         return volume
 
     def sendMainFaderValue (self, db):
         v = fader_db_to_value(db) 
-        master = project.master_track
+        master = self.project.master_track
         master.set_volume(v)
         logger.debug ('set master vol '+str(v))
