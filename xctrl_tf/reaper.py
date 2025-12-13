@@ -25,7 +25,7 @@ def fader_value_to_db (gain_ratio):
         return float('-inf') 
     # Formula: dB = 20 * log10(gain_ratio)
     db = 20 * math.log10(gain_ratio)
-    logger.info ("fader_value_to_db "+str(db))
+    logger.debug ("fader_value_to_db "+str(db))
     return db
 
 class reaper:
@@ -64,13 +64,13 @@ class reaper:
         return name
 
     def getMainFaderValue (self):
-        master = self.project.master_track
+        master = project.master_track
         volume = master.get_volume()
         logger.debug ('master vol '+str(volume)) #1.0 = 0dB
         return volume
 
     def sendMainFaderValue (self, db):
         v = fader_db_to_value(db) 
-        master = self.project.master_track
+        master = project.master_track
         master.set_volume(v)
         logger.debug ('set master vol '+str(v))
