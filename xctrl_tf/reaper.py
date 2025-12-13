@@ -60,7 +60,7 @@ class reaper:
     def getFaderValue (self, channel):
         track = self.project.tracks[channel]
         name = track.get_info_value("D_VOL")
-        logger.info ('track '+str(channel)+ " value "+str(name)) #1.0 = 0dB
+        logger.debug ('track '+str(channel)+ " value "+str(name)) #1.0 = 0dB
         return name
 
     def getMainFaderValue (self):

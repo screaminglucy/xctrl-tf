@@ -35,7 +35,7 @@ def updateTFFaderExt (index,value):
     logger.debug ("updateTFFaderExt "+str(index)+ " "+str(value))
     db = x2tf.xtouchext.fader_value_to_db(value)
     if index <= 7:
-        chan = x2tf.(index)
+        chan = x2tf.xtouchExtChToTFCh(index)
         x2tf.t.sendFaderValue(chan,db)
         x2tf.fader_values[chan] = db * 100
     
@@ -331,15 +331,15 @@ def buttonPressExt (button):
         button.SetLED(button.pressed)
     if 'Mute' in button.name and button.pressed==True:
         ch = int(button.name.replace('Ch','').replace('Mute','')) - 1
-        x2tf.ch_mutes[x2tf.(ch)] = not x2tf.ch_mutes[x2tf.(ch)]
-        x2tf.t.sendChannelMute(x2tf.(ch),x2tf.ch_mutes[x2tf.(ch)])
-        button.SetLED(x2tf.ch_mutes[x2tf.(ch)])
+        x2tf.ch_mutes[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.ch_mutes[x2tf.xtouchExtChToTFCh(ch)]
+        x2tf.t.sendChannelMute(x2tf.xtouchExtChToTFCh(ch),x2tf.ch_mutes[x2tf.xtouchExtChToTFCh(ch)])
+        button.SetLED(x2tf.ch_mutes[x2tf.xtouchExtChToTFCh(ch)])
         x2tf.updateDisplay()
     if 'Solo' in button.name and button.pressed==True:
         ch = int(button.name.replace('Ch','').replace('Solo','')) - 1
-        x2tf.ch_solos[x2tf.(ch)] = not x2tf.ch_solos[x2tf.(ch)]
-        val = x2tf.ch_solos[x2tf.(ch)]
-        x2tf.t.sendChannelSolo(x2tf.(ch),val)
+        x2tf.ch_solos[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.ch_solos[x2tf.xtouchExtChToTFCh(ch)]
+        val = x2tf.ch_solos[x2tf.xtouchExtChToTFCh(ch)]
+        x2tf.t.sendChannelSolo(x2tf.xtouchExtChToTFCh(ch),val)
         val = x2tf.getSoloOnExt(ch)        
         if val == 0 or val == 1:
             button.SetLED(bool(val))
@@ -348,13 +348,13 @@ def buttonPressExt (button):
         x2tf.updateDisplay()
     if 'Sel' in button.name and button.pressed == True:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
-        button.SetLED(x2tf.fader_select_en[x2tf.(ch)])
+        button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
     if 'Sel' in button.name and button.pressed == False:
         ch = int(button.name.replace('Ch','').replace('Sel','')) - 1
 
-        x2tf.fader_select_en[x2tf.(ch)] = not x2tf.fader_select_en[x2tf.(ch)] 
+        x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] = not x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)] 
         x2tf.chan_encoder_group_adjustment = 0 #reset adjustment
-        button.SetLED(x2tf.fader_select_en[x2tf.(ch)])
+        button.SetLED(x2tf.fader_select_en[x2tf.xtouchExtChToTFCh(ch)])
         bank = False
         if time.time() - x2tf.last_select_button_push_time[ch] < 2: #double tap select to change bank!    
             #treat as fader bank change!
@@ -455,7 +455,7 @@ def encoderChange(index, direction):
 
 def encoderChangeExt(index, direction):
     if (index < 8):
-        chan = x2tf.(index)
+        chan = x2tf.xtouchExtChToTFCh(index)
         fx = x2tf.chooseFX(chan)
         if fx == 0:
             send_value =  x2tf.fx1_sends[chan] + (2.5 * direction)
@@ -482,7 +482,7 @@ def encoderChangeExt(index, direction):
 def onTFdisconnected():
     x2tf.updateDisplay()
 
-class xctrlReaper:
+class xctrltf:
     def __init__(self, tf_ip='192.168.10.10'):
         self.map_by_color_en = False
         self.fx_select = 0
@@ -632,7 +632,7 @@ class xctrlReaper:
             #    time.sleep(0.01)
         #while self.t.isQueueEmpty() == False:
             #time.sleep(0.01)
-        self.main_fader_value = self.r.getMainFaderValue()
+        #self.t.getMainFaderValue()
         #self.t.getMainFXFaderValue(0)
         #self.t.getMainFXFaderValue(1)
         #while self.t.isQueueEmpty() == False:
@@ -676,7 +676,7 @@ class xctrlReaper:
         else:
             return self.ch_custom_map[self.fader_offset + fader_index]
 
-    def  (self, fader_index):
+    def xtouchExtChToTFCh (self, fader_index):
         if self.map_by_color_en == False:
             return fader_index + self.ext_fader_offset
         else:
@@ -737,7 +737,7 @@ class xctrlReaper:
         return 0
 
     def getSoloOnExt (self, xtouchIndex):
-        chan = self.(xtouchIndex)
+        chan = self.xtouchExtChToTFCh(xtouchIndex)
         master = self.ch_master_mutes[chan]
         aux = self.ch_solos[chan]
         if (not master) and aux:
@@ -747,7 +747,7 @@ class xctrlReaper:
         return 0
 
     def getChannelOnExt (self, xtouchIndex):
-        chan = self.(xtouchIndex)
+        chan = self.xtouchExtChToTFCh(xtouchIndex)
         master = self.ch_master_mutes[chan]
         aux = self.ch_mutes[chan]
         if master or aux:
@@ -773,7 +773,7 @@ class xctrlReaper:
                     self.xtouch.SendSlider(8,mainv)
             for i in range(8):
                 chan = self.xtouchChToReaperCh(i)
-                extChan = self.(i)
+                extChan = self.xtouchExtChToTFCh(i)
                 db = reaper.fader_value_to_db(self.fader_values[chan])
                 dbExt =  reaper.fader_value_to_db(self.fader_values[extChan])
                 v = self.xtouch.fader_db_to_value(db)
@@ -860,22 +860,22 @@ class xctrlReaper:
                         button.SetLED(bool(val))
                     else:
                         button.BlinkLED()
-            self.xtouchext.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.(0)])
-            self.xtouchext.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.(1)])
-            self.xtouchext.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.(2)])
-            self.xtouchext.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.(3)])
-            self.xtouchext.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.(4)])
-            self.xtouchext.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.(5)])
-            self.xtouchext.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.(6)])
-            self.xtouchext.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.(7)])
-            self.xtouchext.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.(0)])
-            self.xtouchext.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.(1)])
-            self.xtouchext.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.(2)])
-            self.xtouchext.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.(3)])
-            self.xtouchext.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.(4)])
-            self.xtouchext.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.(5)])
-            self.xtouchext.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.(6)])
-            self.xtouchext.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.(7)])
+            self.xtouchext.GetButton('Ch1Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(0)])
+            self.xtouchext.GetButton('Ch2Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(1)])
+            self.xtouchext.GetButton('Ch3Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(2)])
+            self.xtouchext.GetButton('Ch4Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(3)])
+            self.xtouchext.GetButton('Ch5Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(4)])
+            self.xtouchext.GetButton('Ch6Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(5)])
+            self.xtouchext.GetButton('Ch7Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(6)])
+            self.xtouchext.GetButton('Ch8Mute').SetLED(self.ch_mutes[self.xtouchExtChToTFCh(7)])
+            self.xtouchext.GetButton('Ch1Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(0)])
+            self.xtouchext.GetButton('Ch2Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(1)])
+            self.xtouchext.GetButton('Ch3Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(2)])
+            self.xtouchext.GetButton('Ch4Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(3)])
+            self.xtouchext.GetButton('Ch5Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(4)])
+            self.xtouchext.GetButton('Ch6Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(5)])
+            self.xtouchext.GetButton('Ch7Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(6)])
+            self.xtouchext.GetButton('Ch8Sel').SetLED(self.fader_select_en[self.xtouchExtChToTFCh(7)])
             self.xtouchext.GetButton('Ch1Rec').SetLED(self.getChannelOnExt(0))
             self.xtouchext.GetButton('Ch2Rec').SetLED(self.getChannelOnExt(1))
             self.xtouchext.GetButton('Ch3Rec').SetLED(self.getChannelOnExt(2))
@@ -933,14 +933,14 @@ class xctrlReaper:
                         #self.t.getFX2Send(self.xtouchChToReaperCh(i))
                     if self.xtouchext.running:
                         if self.xtouchext_fader_in_use[i] == False and (time.time() - self.xtouchext_fader_in_use_timeout[i] > FADER_TIMEOUT):
-                            self.r.getFaderValue(self.(i))
-                        self.r.getChannelOn(self.(i))
+                            self.r.getFaderValue(self.xtouchExtChToTFCh(i))
+                        self.r.getChannelOn(self.xtouchExtChToTFCh(i))
                         if j % 6 == 0:
-                            self.r.getFaderName(self.(i))
-                            self.r.getFaderColor(self.(i))     
-                            self.r.getChannelSoloOn(self.(i))            
-                        #self.t.getFX1Send(self.(i))
-                        #self.t.getFX2Send(self.(i))
+                            self.r.getFaderName(self.xtouchExtChToTFCh(i))
+                            self.r.getFaderColor(self.xtouchExtChToTFCh(i))     
+                            self.r.getChannelSoloOn(self.xtouchExtChToTFCh(i))            
+                        #self.t.getFX1Send(self.xtouchExtChToTFCh(i))
+                        #self.t.getFX2Send(self.xtouchExtChToTFCh(i))
                     #while (self.t.isQueueEmpty() == False):
                         #time.sleep(0.1)
                 '''
@@ -1076,7 +1076,7 @@ class xctrlReaper:
         if time.time()-self.xtouchext_last_meter_update > 1:
             self.xtouchext_last_meter_update = time.time()
             for i in range(8):
-                display_meters.append(meter_values[self.(i)])
+                display_meters.append(meter_values[self.xtouchExtChToTFCh(i)])
                 self.update_meter_ext (i,display_meters[i])
 
     def update_main_meter(self, values):
@@ -1104,7 +1104,7 @@ def on_key_event(event):
 
 keyboard.on_press(on_key_event)
 '''
-x2tf = xctrlReaper()
+x2tf = xctrltf()
 firstSync = True
 synced = False
 while running:
