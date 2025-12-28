@@ -61,7 +61,7 @@ def get_ips():
         hostname = hostname+'.local' #for linux/rpi
     local_ip = socket.gethostbyname(hostname)'''
     local_ip = get_mac_ips()
-    logger.debug(f"Your Wi-Fi IP address is: {local_ip[0]}")
+    logger.debug(f"Your Wi-Fi IP address is: {local_ip[1]}")
     return local_ip
 
 def detect_yamaha (timeout=30): 
@@ -74,8 +74,7 @@ def detect_yamaha (timeout=30):
     mac_address_hex = mac_address_str.replace(":", "").replace("-", "").lower()
     mac_address_bytearray = bytearray(binascii.unhexlify(mac_address_hex))
     logger.info ('my ip is '+ips[0])
-    if len(ips) > 1:
-        logger.info ("and wifi: "+ips[1])
+    logger.info ("and wifi: "+ips[1])
     ip_bytes = socket.inet_aton(ips[1])
     message5 = b"YSDP\x00D\x00\x04"
     message5 += ip_bytes
@@ -89,7 +88,7 @@ def detect_yamaha (timeout=30):
     message += mac_address_bytearray
     message += b"\x08_ypax-tf\x00%\x12Yamaha Corporation\x07TF-RACK\x09Yamaha TF"
     sock.bind(('', 54330))
-    b = (ip.split('.'))[:-1]
+    b = (ips[1].split('.'))[:-1]
     b.append('255')
     b = '.'.join(b)
     logger.info ('broadcast to ' + b)
