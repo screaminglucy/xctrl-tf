@@ -8,18 +8,19 @@ global reaperObj
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+def tfColor2Reaper (color):
+    return color
+
 def onFaderNameRcv (chan, name):
-    reaperObj.updateFaderName(chan,name)
+    reaperObj.setFaderName(chan,name)
 
 def onFaderColorRcv (chan, color):
-    reaperObj.updateFaderColor(chan,color)
-
-def onFaderIconRcv (chan, icon):
-    reaperObj.updateFaderIcon(chan,icon)
+    c = tfColor2Reaper (color)
+    reaperObj.setFaderColor(chan,c)
 
 def onChannelMasterMute(chan, value):
     value =  not value
-    reaperObj.updateChannelMute(chan,value)
+    reaperObj.sendChannelMute(chan,value)
       
 def onTFdisconnected():
     reaperObj.showDisconnected()
@@ -28,10 +29,10 @@ class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
         self.pendingDisplayUpdate = True
         self.t = None
-        for i in range(32):
-            self.r.updateFaderName (i,"channel "+str(i+1))
-        self.t = tf.tf_rcp(tf_ip)
         self.r = reaper.reaper()
+        for i in range(32):
+            self.r.setFaderName (i,"channel "+str(i+1))
+        self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:
             self.t.onTFdisconnected = onTFdisconnected
@@ -71,12 +72,20 @@ class reaperClass:
                 while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
                 self.syncTF2Reaper()
-                wait_time = 5
+                wait_time = 10
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
                     
     def updateFaderColor(self,chan,value):
-        
+        '''class Color(Enum):
+            Off = 0
+            Red = 1
+            Green = 2
+            Yellow = 3
+            Blue = 4
+            Pink = 5
+            Cyan = 6
+            White = 7'''
         if value == "Purple":
             color = 5 #pink
             logger.debug (value + " no color match using pink!")
@@ -88,7 +97,6 @@ class reaperClass:
             logger.debug (value + " no color match using white!")
         if color == 0: #we dont want any "off"
             color = 7
-        self.fader_colors[chan] = color
 
     def stop_running (self):
         self.t.running = False
