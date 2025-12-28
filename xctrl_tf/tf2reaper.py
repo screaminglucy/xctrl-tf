@@ -3,12 +3,28 @@ import reaper
 import logging
 import _thread
 import tf
+from enum import Enum
 
 global reaperObj
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+class Color(Enum):
+        Off = 0
+        Red = 1
+        Green = 2
+        Yellow = 3
+        Blue = 4
+        Pink = 5
+        Cyan = 6
+        White = 7
+        Purple = 8
+        SkyBlue = 9
+
 def tfColor2Reaper (color):
+    
+       
+    
     return color
 
 def onFaderNameRcv (chan, name):
@@ -79,27 +95,7 @@ class reaperClass:
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
                     
-    def updateFaderColor(self,chan,value):
-        '''class Color(Enum):
-            Off = 0
-            Red = 1
-            Green = 2
-            Yellow = 3
-            Blue = 4
-            Pink = 5
-            Cyan = 6
-            White = 7'''
-        if value == "Purple":
-            color = 5 #pink
-            logger.debug (value + " no color match using pink!")
-        elif value == "SkyBlue":
-            color = 6 #cyan
-            logger.debug (value + " no color match using cyan!")
-        else:
-            color = 7
-            logger.debug (value + " no color match using white!")
-        if color == 0: #we dont want any "off"
-            color = 7
+
 
     def stop_running (self):
         self.t.running = False

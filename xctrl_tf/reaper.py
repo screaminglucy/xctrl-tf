@@ -40,11 +40,22 @@ class reaper:
         logger.debug ('track '+str(channel)+ " name "+name)
         return name
     
+    def setFaderName (self, channel, name):
+        track = self.project.tracks[channel]
+        track.name = name
+        logger.debug ('track '+str(channel)+ "set name "+name)
+        return name
+    
     def getFaderColor (self, channel):
         track = self.project.tracks[channel]
         name = track.color
         logger.debug ('track '+str(channel)+ " color "+str(name)) #0-255 rgb
         return name
+
+    def setFaderColor (self, channel, color):
+        track = self.project.tracks[channel]
+        track.color = color
+        logger.debug ('track '+str(channel)+ " color "+str(name)) #0-255 rgb
     
     def getChannelSoloOn (self, channel):
         track = self.project.tracks[channel]
@@ -77,8 +88,15 @@ class reaper:
             v = fader_db_to_value(db)
             track.set_info_value("D_VOL",v)
             self.lastSend = time.time()
+    
+    def showDisconnected (self):
+        reapy.print("TF mixer disconnect")
 
+    def showConnected (self):
+        reapy.print("TF mixer connected")
         
+    def showSynced (self):
+        reapy.print("synced to TF mixer ")
 
     def getMainFaderValue (self):
         master = self.project.master_track

@@ -31,13 +31,34 @@ def get_mac_addr():
     return mac_address
 
 
+import subprocess
+
+def get_mac_wifi_ip():
+    # Try getting the IP for interface en0 (common for Wi-Fi on Mac)
+    try:
+        ip_address = subprocess.check_output(['ipconfig', 'getifaddr', 'en0'], encoding='utf-8').strip()
+        return ip_address
+    except subprocess.CalledProcessError:
+        # Fallback to another common interface name if en0 fails
+        try:
+            ip_address = subprocess.check_output(['ipconfig', 'getifaddr', 'en1'], encoding='utf-8').strip()
+            return ip_address
+        except:
+            return "Could not determine IP for en0 or en1"
+
+
+
 def get_ip():
     """Retrieves the local IP address of the machine."""
+    '''
     hostname = socket.gethostname()
+    print ("hostname = "+hostname)
     local_ip = socket.gethostbyname(hostname)
     if local_ip[0:3] == '127':
         hostname = hostname+'.local' #for linux/rpi
-    local_ip = socket.gethostbyname(hostname)
+    local_ip = socket.gethostbyname(hostname)'''
+    local_ip = get_mac_wifi_ip()
+    logger.debug(f"Your Wi-Fi IP address is: {local_ip}")
     return local_ip
 
 def detect_yamaha (timeout=30): 
@@ -153,7 +174,7 @@ class tf_rcp:
                         self.lastMsgTime = time.time()
                         self.send_command('scpmode keepalive 10000')
                     else:
-                        logger.info(f"Connection failed (Error: {errno.errorcode[result]}). Retrying...")
+                        logger.info(f"Connection failed . Retrying...")
                         s.close()  # Close the socket before retrying
                 except Exception as e:
                     logger.info(f"An error occurred: {e}. Retrying...")
