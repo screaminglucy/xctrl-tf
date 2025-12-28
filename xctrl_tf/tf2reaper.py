@@ -12,18 +12,23 @@ def tfColor2Reaper (color):
     return color
 
 def onFaderNameRcv (chan, name):
-    reaperObj.setFaderName(chan,name)
+    reaperObj.r.setFaderName(chan,name)
 
 def onFaderColorRcv (chan, color):
     c = tfColor2Reaper (color)
-    reaperObj.setFaderColor(chan,c)
+    reaperObj.r.setFaderColor(chan,c)
 
 def onChannelMasterMute(chan, value):
     value =  not value
-    reaperObj.sendChannelMute(chan,value)
+    reaperObj.r.sendChannelMute(chan,value)
       
+global timeLastShown
+timeLastShown = 0
 def onTFdisconnected():
-    reaperObj.showDisconnected()
+    global timeLastShown
+    if (time.time() - timeLastShown) > 60:
+        reaperObj.r.showDisconnected()
+        timeLastShown = time.time()
 
 class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
@@ -40,7 +45,7 @@ class reaperClass:
             self.t.onFaderNameRcv = onFaderNameRcv
             self.t.onChannelMasterMute = onChannelMasterMute
         self.running = True
-        self.sync2TF()
+        _thread.start_new_thread(self.periodicSync, ())
         self.connected = True
 
     def syncTF2Reaper(self):
@@ -63,10 +68,8 @@ class reaperClass:
         logger.info ("syncTF2Reaper()")
 
    
-    def periodicDisplayRefresh(self):
+    def periodicSync(self):
         while self.running:
-            k = 0
-            j = 0
             if self.connected:      
                 loop_start_time = time.time()
                 while (self.t.isQueueEmpty() == False):
