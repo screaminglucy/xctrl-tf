@@ -10,21 +10,19 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 class Color(Enum):
-        Off = 0
-        Red = 1
-        Green = 2
-        Yellow = 3
-        Blue = 4
-        Pink = 5
-        Cyan = 6
-        White = 7
-        Purple = 8
-        SkyBlue = 9
+    Off = 0x000000
+    Red = 0xff0000
+    Green = 0x00ff00
+    Yellow = 0xffff00
+    Blue = 0x0000ff
+    Pink = 0xff007f
+    Cyan = 0x00ffff
+    White = 0xffffff
+    Purple = 0x7f00ff
+    SkyBlue = 0x0080ff
 
 def tfColor2Reaper (color):
-    
-       
-    
+    color = Color[color].value
     return color
 
 def onFaderNameRcv (chan, name):
@@ -53,6 +51,7 @@ class reaperClass:
         self.r = reaper.reaper()
         for i in range(32):
             self.r.setFaderName (i,"channel "+str(i+1))
+            onFaderColorRcv (i,"Blue")
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:

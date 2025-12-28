@@ -54,7 +54,13 @@ class reaper:
 
     def setFaderColor (self, channel, color):
         track = self.project.tracks[channel]
-        track.color = color
+        # Convert RGB to REAPER's native color format
+        # The '0' argument is for a custom color flag
+        r = color >> 16
+        g = (color >> 8) & 0xff
+        b = color & 0xff
+        native_color = reaper.ColorToNative(r, g, b) | 0x100000
+        track.color = native_color
         logger.debug ('track '+str(channel)+ " color "+str(name)) #0-255 rgb
     
     def getChannelSoloOn (self, channel):
