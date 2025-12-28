@@ -105,8 +105,7 @@ class reaperClass:
     
 
 running = True
-
-
+print ('waiting 30 sec to start to allow reaper to load')
 reaperObj = reaperClass()
 firstSync = True
 synced = False

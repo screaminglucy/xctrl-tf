@@ -33,22 +33,25 @@ def get_mac_addr():
 
 import subprocess
 
-def get_mac_wifi_ip():
+def get_mac_ips():
     # Try getting the IP for interface en0 (common for Wi-Fi on Mac)
+    ip_addresses = []
     try:
         ip_address = subprocess.check_output(['ipconfig', 'getifaddr', 'en0'], encoding='utf-8').strip()
-        return ip_address
+        ip_addresses.append(ip_address)
     except subprocess.CalledProcessError:
-        # Fallback to another common interface name if en0 fails
-        try:
-            ip_address = subprocess.check_output(['ipconfig', 'getifaddr', 'en1'], encoding='utf-8').strip()
-            return ip_address
-        except:
-            return "Could not determine IP for en0 or en1"
+        logger.debug ("no address for en0")
+        
+    try:
+        ip_address = subprocess.check_output(['ipconfig', 'getifaddr', 'en1'], encoding='utf-8').strip()
+        ip_addresses.append(ip_address)
+    except:
+        logger.debug ("no address for en1")
+    return ip_addresses
 
 
 
-def get_ip():
+def get_ips():
     """Retrieves the local IP address of the machine."""
     '''
     hostname = socket.gethostname()
@@ -57,8 +60,8 @@ def get_ip():
     if local_ip[0:3] == '127':
         hostname = hostname+'.local' #for linux/rpi
     local_ip = socket.gethostbyname(hostname)'''
-    local_ip = get_mac_wifi_ip()
-    logger.debug(f"Your Wi-Fi IP address is: {local_ip}")
+    local_ip = get_mac_ips()
+    logger.debug(f"Your Wi-Fi IP address is: {local_ip[0]}")
     return local_ip
 
 def detect_yamaha (timeout=30): 
@@ -66,12 +69,14 @@ def detect_yamaha (timeout=30):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-    ip = get_ip()
+    ips = get_ips()
     mac_address_str = get_mac_addr()
     mac_address_hex = mac_address_str.replace(":", "").replace("-", "").lower()
     mac_address_bytearray = bytearray(binascii.unhexlify(mac_address_hex))
-    logger.info ('my ip is '+ip)
-    ip_bytes = socket.inet_aton(ip)
+    logger.info ('my ip is '+ips[0])
+    if len(ips) > 1:
+        logger.info ("and wifi: "+ips[1])
+    ip_bytes = socket.inet_aton(ips[1])
     message5 = b"YSDP\x00D\x00\x04"
     message5 += ip_bytes
     message5 += b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -98,7 +103,7 @@ def detect_yamaha (timeout=30):
         data_list = list(data)
         logger.debug (data_list)
         ip = addr[0]
-        if ip!=get_ip() and ip!= '127.0.0.1':
+        if ip!=ips[1] and ip!= '127.0.0.1' and ip!=ips[0]:
             logger.info (ip)
             logger.info ('detected yamaha')
             detect = True
