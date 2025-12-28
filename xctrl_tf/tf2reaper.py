@@ -50,9 +50,10 @@ class reaperClass:
         self.t = None
         self.r = reaper.reaper()
         for i in range(32):
-            self.r.setFaderName (i,"channel "+str(i+1))
-            c = tfColor2Reaper ("Blue")
-            self.r.setFaderColor(i,c)
+            self.r.setFaderName (i,"ch "+str(i+1))
+            #c = tfColor2Reaper ("Blue")
+            #self.r.setFaderColor(i,c)
+            #self.r.sendChannelMute(i,False)
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:
