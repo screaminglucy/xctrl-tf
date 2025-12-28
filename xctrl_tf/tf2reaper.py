@@ -51,7 +51,8 @@ class reaperClass:
         self.r = reaper.reaper()
         for i in range(32):
             self.r.setFaderName (i,"channel "+str(i+1))
-            onFaderColorRcv (i,"Blue")
+            c = tfColor2Reaper ("Blue")
+            self.r.setFaderColor(i,c)
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:

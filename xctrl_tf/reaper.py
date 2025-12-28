@@ -59,9 +59,9 @@ class reaper:
         r = color >> 16
         g = (color >> 8) & 0xff
         b = color & 0xff
-        native_color = reaper.ColorToNative(r, g, b) | 0x100000
+        native_color = (r, g, b)
         track.color = native_color
-        logger.debug ('track '+str(channel)+ " color "+str(name)) #0-255 rgb
+        logger.debug ('track '+str(channel)+ " color "+str(native_color)) #0-255 rgb
     
     def getChannelSoloOn (self, channel):
         track = self.project.tracks[channel]
