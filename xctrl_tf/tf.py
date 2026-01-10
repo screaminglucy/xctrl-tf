@@ -95,9 +95,14 @@ def detect_yamaha (timeout=30):
     detect = False
     start = time.time()
     while detect == False and (time.time()-start) < timeout:
-        sock.sendto(message, (b, 54330))
-        sock.sendto(message5, (b, 54330))
-        data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+        try:
+            sock.sendto(message, (b, 54330))
+            sock.sendto(message5, (b, 54330))
+            data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+        except:
+            logger.error ("Socket error")
+            data = []
+            addr = ['127.0.0.1']
         logger.debug("received message: %s" % data)
         data_list = list(data)
         logger.debug (data_list)
