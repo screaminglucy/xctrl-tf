@@ -32,10 +32,12 @@ def tfColor2Reaper (color):
 
 def onFaderNameRcv (chan, name):
     reaperObj.r.setFaderName(chan,name)
+    reaperObj.fader_names[chan] = name
 
 def onFaderColorRcv (chan, color):
     c = tfColor2Reaper (color)
     reaperObj.r.setFaderColor(chan,c)
+    reaperObj.fader_colors[chan] = color
 
 def onChannelMasterMute(chan, value):
     value =  not value
@@ -54,12 +56,11 @@ class reaperClass:
         self.updateCounter = 0
         self.pendingDisplayUpdate = True
         self.t = None
+        self.fader_names = ['uninitialized']*32
+        self.fader_colors = ['uninitialized']*32
         self.r = reaper.reaper()
         for i in range(32):
             self.r.setFaderName (i,"ch "+str(i+1))
-            #c = tfColor2Reaper ("Blue")
-            #self.r.setFaderColor(i,c)
-            #self.r.sendChannelMute(i,False)
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:
@@ -78,9 +79,11 @@ class reaperClass:
         self.updateCounter = self.updateCounter + 1
         for i in range(32):
             if self.updateCounter == 2:
-                self.t.getFaderName(i)
-                time.sleep(0.001)
-                self.t.getFaderColor(i)
+                if self.fader_names[i] == 'uninitialized':
+                    self.t.getFaderName(i)
+                    time.sleep(0.001)
+                if self.fader_colors[i] == 'uninitialized':
+                    self.t.getFaderColor(i)
                 while self.t.isQueueEmpty() == False:
                     time.sleep(0.02)
             self.t.getChannelOn(i)
@@ -104,7 +107,8 @@ class reaperClass:
                 while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
                 self.syncTF2Reaper()
-                wait_time = 2
+                time.sleep(2)
+                wait_time = 0
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
                     
