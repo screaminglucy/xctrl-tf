@@ -59,8 +59,8 @@ class reaperClass:
         self.fader_names = ['uninitialized']*32
         self.fader_colors = ['uninitialized']*32
         self.r = reaper.reaper()
-        for i in range(32):
-            self.r.setFaderName (i,"ch "+str(i+1))
+        #for i in range(32):
+        #    self.r.setFaderName (i,"ch "+str(i+1))
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:
