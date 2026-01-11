@@ -76,10 +76,13 @@ class reaperClass:
     def syncTF2Reaper_thread (self):
         for i in range(32):
             self.t.getFaderName(i)
+            time.sleep(0.01)
             self.t.getFaderColor(i)
+            time.sleep(0.01)
             while self.t.isQueueEmpty() == False:
                 time.sleep(0.01)
             self.t.getChannelOn(i)
+            time.sleep(0.01)
             while self.t.isQueueEmpty() == False:
                 time.sleep(0.01)
         while self.t.isQueueEmpty() == False:
