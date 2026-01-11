@@ -82,13 +82,13 @@ class reaperClass:
                 time.sleep(0.001)
                 self.t.getFaderColor(i)
                 while self.t.isQueueEmpty() == False:
-                    time.sleep(0.01)
+                    time.sleep(0.02)
             self.t.getChannelOn(i)
             time.sleep(0.001)
             while self.t.isQueueEmpty() == False:
-                time.sleep(0.01)
+                time.sleep(0.02)
         while self.t.isQueueEmpty() == False:
-            time.sleep(0.01)
+            time.sleep(0.02)
         self.t.getGlobalFxMute()
         while self.t.isQueueEmpty() == False:
             time.sleep(0.01)
@@ -104,7 +104,7 @@ class reaperClass:
                 while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
                 self.syncTF2Reaper()
-                wait_time = 10
+                wait_time = 2
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
                     
