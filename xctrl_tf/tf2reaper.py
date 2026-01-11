@@ -51,6 +51,7 @@ def onTFdisconnected():
 
 class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
+        self.updateCounter = 0
         self.pendingDisplayUpdate = True
         self.t = None
         self.r = reaper.reaper()
@@ -74,15 +75,16 @@ class reaperClass:
         _thread.start_new_thread(self.syncTF2Reaper_thread, ())
 
     def syncTF2Reaper_thread (self):
+        self.updateCounter = self.updateCounter + 1
         for i in range(32):
-            self.t.getFaderName(i)
-            time.sleep(0.01)
-            self.t.getFaderColor(i)
-            time.sleep(0.01)
-            while self.t.isQueueEmpty() == False:
-                time.sleep(0.01)
+            if self.updateCounter == 2:
+                self.t.getFaderName(i)
+                time.sleep(0.001)
+                self.t.getFaderColor(i)
+                while self.t.isQueueEmpty() == False:
+                    time.sleep(0.01)
             self.t.getChannelOn(i)
-            time.sleep(0.01)
+            time.sleep(0.001)
             while self.t.isQueueEmpty() == False:
                 time.sleep(0.01)
         while self.t.isQueueEmpty() == False:
@@ -90,6 +92,8 @@ class reaperClass:
         self.t.getGlobalFxMute()
         while self.t.isQueueEmpty() == False:
             time.sleep(0.01)
+        if self.updateCounter == 2:
+            self.updateCounter = 0
         logger.info ("syncTF2Reaper()")
 
    
