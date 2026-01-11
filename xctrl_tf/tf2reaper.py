@@ -19,10 +19,15 @@ class Color(Enum):
     Cyan = 0x00ffff
     White = 0xffffff
     Purple = 0x7f00ff
-    SkyBlue = 0x0080ff
+    SkyBlue = 0x0080ff0
+    Orange = 0xffa500
 
 def tfColor2Reaper (color):
-    color = Color[color].value
+    try:
+        color = Color[color].value
+    except:
+        logging.error ("Color not found")
+        return 0x000000
     return color
 
 def onFaderNameRcv (chan, name):

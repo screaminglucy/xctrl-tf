@@ -65,6 +65,7 @@ def get_ips():
     return local_ip
 
 def detect_yamaha (timeout=30): 
+    return '192.168.10.10'
     #send udp broadcast to probe for mixer
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
