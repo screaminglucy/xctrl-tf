@@ -107,7 +107,10 @@ class reaperClass:
                 while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
                 self.syncTF2Reaper()
-                time.sleep(2)
+                if 'uninitialized' in self.fader_colors or 'uninitialized' in self.fader_names:
+                    time.sleep(2)
+                else:
+                    time.sleep(1)
                 wait_time = 0
                 while ((time.time() - loop_start_time) < wait_time):
                     time.sleep(0.5)
