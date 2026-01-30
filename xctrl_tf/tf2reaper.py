@@ -82,11 +82,13 @@ class reaperClass:
                 if self.fader_names[i] == 'uninitialized':
                     self.t.getFaderName(i)
                     time.sleep(0.001)
+                    self.t.getChannelOn(i)
+                    time.sleep(0.001)
                 if self.fader_colors[i] == 'uninitialized':
                     self.t.getFaderColor(i)
                 while self.t.isQueueEmpty() == False:
                     time.sleep(0.02)
-            self.t.getChannelOn(i)
+            
             time.sleep(0.001)
             while self.t.isQueueEmpty() == False:
                 time.sleep(0.02)
@@ -103,6 +105,7 @@ class reaperClass:
     def periodicSync(self):
         while self.running:
             if self.connected:      
+                #self.r.refreshSurfaces()
                 loop_start_time = time.time()
                 while (self.t.isQueueEmpty() == False):
                     time.sleep(0.1)
