@@ -54,7 +54,7 @@ def onTFdisconnected():
 
 class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
-        self.post_on_chan_list = [25,26,27,28,29,30,31]
+        self.post_on_chan_list = [24,25,26,27,28,29,30,31]
         self.updateCounter = 0
         self.pendingDisplayUpdate = True
         self.t = None
