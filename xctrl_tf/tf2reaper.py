@@ -87,8 +87,9 @@ class reaperClass:
                     self.t.getFaderName(i)
                     time.sleep(0.001)
                 if self.mute_init[i] == 'uninitialized':
-                    self.t.getChannelOn(i)
-                    time.sleep(0.001)
+                    if i not in self.post_on_chan_list:
+                        self.t.getChannelOn(i)
+                        time.sleep(0.001)
                 if self.fader_colors[i] == 'uninitialized':
                     self.t.getFaderColor(i)
                 while self.t.isQueueEmpty() == False:
