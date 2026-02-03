@@ -72,7 +72,7 @@ class reaper:
     def sendChannelMute (self, channel,mute):
         track = self.project.tracks[channel]
         track.is_muted = mute
-        logger.debug ('track '+str(channel)+ " mute "+str(mute))
+        logger.info ('track '+str(channel)+ " mute "+str(mute))
     
     def getChannelOn (self, channel):
         track = self.project.tracks[channel]

@@ -41,7 +41,8 @@ def onFaderColorRcv (chan, color):
 
 def onChannelMasterMute(chan, value):
     value =  not value
-    reaperObj.r.sendChannelMute(chan,value)
+    if chan not in reaperObj.post_on_chan_list:
+        reaperObj.r.sendChannelMute(chan,value)
       
 global timeLastShown
 timeLastShown = 0
@@ -53,14 +54,17 @@ def onTFdisconnected():
 
 class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
+        self.post_on_chan_list = [25,26,27,28,29,30,31]
         self.updateCounter = 0
         self.pendingDisplayUpdate = True
         self.t = None
         self.fader_names = ['uninitialized']*32
         self.fader_colors = ['uninitialized']*32
+        self.mute_init = ['uninitialized']*32
         self.r = reaper.reaper()
-        #for i in range(32):
-        #    self.r.setFaderName (i,"ch "+str(i+1))
+        #unmute post on channels
+        for ch in self.post_on_chan_list:
+            self.r.sendChannelMute (ch,False)
         self.t = tf.tf_rcp(tf_ip)
         self.connected = False
         if self.t is not None:
@@ -82,6 +86,7 @@ class reaperClass:
                 if self.fader_names[i] == 'uninitialized':
                     self.t.getFaderName(i)
                     time.sleep(0.001)
+                if self.mute_init[i] == 'uninitialized':
                     self.t.getChannelOn(i)
                     time.sleep(0.001)
                 if self.fader_colors[i] == 'uninitialized':
