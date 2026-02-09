@@ -43,6 +43,7 @@ def onChannelMasterMute(chan, value):
     value =  not value
     if chan not in reaperObj.post_on_chan_list:
         reaperObj.r.sendChannelMute(chan,value)
+    reaperObj.mute_init[chan] = 'initialized'
       
 global timeLastShown
 timeLastShown = 0
@@ -55,6 +56,7 @@ def onTFdisconnected():
 class reaperClass:
     def __init__(self, tf_ip='192.168.10.10'):
         self.post_on_chan_list = [24,25,26,27,28,29,30,31]
+        self.dca = [32,33,34,35,36,37,38,39]
         self.updateCounter = 0
         self.pendingDisplayUpdate = True
         self.t = None
