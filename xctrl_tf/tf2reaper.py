@@ -31,19 +31,22 @@ def tfColor2Reaper (color):
     return color
 
 def onFaderNameRcv (chan, name):
-    reaperObj.r.setFaderName(chan,name)
-    reaperObj.fader_names[chan] = name
+    if (chan < 32):
+        reaperObj.r.setFaderName(chan,name)
+        reaperObj.fader_names[chan] = name
 
 def onFaderColorRcv (chan, color):
     c = tfColor2Reaper (color)
-    reaperObj.r.setFaderColor(chan,c)
-    reaperObj.fader_colors[chan] = color
+    if (chan < 32):
+        reaperObj.r.setFaderColor(chan,c)
+        reaperObj.fader_colors[chan] = color
 
 def onChannelMasterMute(chan, value):
     value =  not value
-    if chan not in reaperObj.post_on_chan_list:
-        reaperObj.r.sendChannelMute(chan,value)
-    reaperObj.mute_init[chan] = 'initialized'
+    if (chan < 32):
+        if chan not in reaperObj.post_on_chan_list:
+            reaperObj.r.sendChannelMute(chan,value)
+        reaperObj.mute_init[chan] = 'initialized'
       
 global timeLastShown
 timeLastShown = 0
